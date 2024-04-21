@@ -1,0 +1,80 @@
+#inner_widget{
+    background-color: #303133;
+    border: 1px solid #444444;
+    font-family: Microsoft YaHei;
+    border-radius: 8px;
+}
+
+QLineEdit {
+    background-color: #303133;
+    color: #eeeeee;
+    font-size: 20px;
+    padding: 4px 8px;
+    font-weight: 700;
+    font-family: Microsoft YaHei;
+    border: 1px solid transparent;
+}
+
+#software_list_widget {
+    border: transparent;
+    outline: 0;
+    padding: 0;
+    background-color: #303133;
+    color: #eeeeee;
+}
+
+#software_list_widget::item:hover {
+    background-color: #3B3C3D;
+}
+
+#result_list_widget::item:selected {
+    background-color: #303133;
+}
+
+#software_item QLabel {
+    color: #eeeeee;
+}
+
+#software_item QToolButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+}
+
+#result_list_widget {
+    border: transparent;
+    outline: none;
+    padding: 0;
+    background-color: #303133;
+}
+
+#result_list_widget::item:selected {
+    background-color: #525252;
+    color: #ffffff;
+}
+
+#result_list_widget::item:hover {
+    background-color: #157abe;
+}
+
+QScrollBar:vertical {
+    max-width: 3px;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 1px solid #666666;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #666666;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #666666;
+}
+
+QScrollBar::add-line:vertical {
+    background-color: #303133;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background-color: #303133;
+}
