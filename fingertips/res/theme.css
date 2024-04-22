@@ -31,6 +31,10 @@ QLineEdit {
     background-color: #303133;
 }
 
+#software_list_widget {
+    margin-left: 6px;
+}
+
 #software_item QLabel {
     color: #eeeeee;
 }

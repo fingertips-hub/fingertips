@@ -14,7 +14,7 @@ class Fingertips(QtWidgets.QWidget):
 
         pos = QtWidgets.QDesktopWidget().availableGeometry().center()
         pos.setX(pos.x() - (self.width() / 2) - 100)
-        pos.setY(pos.y() - (pos.y() / 2) - 300)
+        pos.setY(pos.y() - (pos.y() / 2) - 380)
         self.move(pos)
 
         self.init_ui()
@@ -24,7 +24,7 @@ class Fingertips(QtWidgets.QWidget):
         self.setWindowFlags(
             QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
 
-        self.setFixedSize(QtCore.QSize(850, 600))
+        self.setFixedSize(QtCore.QSize(830, 710))
 
         self.load_style()
         self.installEventFilter(self)
@@ -35,8 +35,8 @@ class Fingertips(QtWidgets.QWidget):
         inner_widget = QtWidgets.QWidget()
         inner_widget.setObjectName('inner_widget')
         inner_layout = QtWidgets.QVBoxLayout(inner_widget)
-        inner_layout.setContentsMargins(3, 3, 3, 3)
-        inner_layout.setSpacing(5)
+        inner_layout.setContentsMargins(4, 4, 4, 4)
+        inner_layout.setSpacing(6)
 
         self.input_line_edit = QtWidgets.QLineEdit()
         self.input_line_edit.setPlaceholderText(self.placeholder)
@@ -55,6 +55,7 @@ class Fingertips(QtWidgets.QWidget):
         #
 
         self.software_list_widget = SoftwareListWidget()
+        self.software_list_widget.setObjectName('software_list_widget')
 
         inner_layout.addWidget(self.input_line_edit)
         inner_layout.addWidget(self.software_list_widget)

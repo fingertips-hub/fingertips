@@ -1,9 +1,7 @@
 import os
-import locale
 
 from PySide2 import QtWidgets
 from PySide2 import QtCore
-from PySide2 import QtGui
 
 import win32com.client
 
@@ -14,25 +12,39 @@ class SoftwareItem(QtWidgets.QWidget):
         self._init_ui(icon, name)
 
     def _init_ui(self, icon, name):
-        self.setMaximumSize(100, 100)
+        self.setMaximumSize(88, 86)
         self.setObjectName('software_item')
 
         self.name_label = QtWidgets.QLabel(name)
         self.img_label = QtWidgets.QLabel()
-        self.img_label.setFixedSize(48, 48)
+        self.img_label.setFixedSize(34, 34)
 
-        pixmap = icon.pixmap(48, 48).scaled(
-            48, 48, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        pixmap = icon.pixmap(34, 34).scaled(
+            34, 34, QtCore.Qt.KeepAspectRatio,
+            QtCore.Qt.SmoothTransformation
+        )
         self.img_label.setPixmap(pixmap)
+
+        img_layout = QtWidgets.QHBoxLayout()
+        img_layout.addItem(QtWidgets.QSpacerItem(
+            34, 100, QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Minimum
+        ))
+        img_layout.addWidget(self.img_label)
+
+        img_layout.addItem(QtWidgets.QSpacerItem(
+            34, 100, QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Minimum
+        ))
 
         self.img_label.setAlignment(QtCore.Qt.AlignCenter)
         self.name_label.setAlignment(QtCore.Qt.AlignCenter)
         self.name_label.setWordWrap(True)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(2, 2, 2, 2)
-        layout.setAlignment(QtCore.Qt.AlignVCenter)
-        layout.addWidget(self.img_label)
+        layout.setContentsMargins(4, 6, 4, 6)
+        layout.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addLayout(img_layout)
         layout.addWidget(self.name_label)
 
 
@@ -54,21 +66,23 @@ class SoftwareListWidget(QtWidgets.QListWidget):
             event.accept()
 
             files = [u.toLocalFile() for u in event.mimeData().urls()]
-            for file in files:
-                if file.endswith('.lnk'):
-                    shell = win32com.client.Dispatch("WScript.Shell")
-                    shortcut = shell.CreateShortCut(file)
+            for source_file in files:
+                if source_file.endswith('.lnk'):
+                    shell = win32com.client.Dispatch('WScript.Shell')
+                    shortcut = shell.CreateShortCut(source_file)
                     file = shortcut.Targetpath
+                else:
+                    file = source_file
 
                 icon = QtWidgets.QFileIconProvider().icon(
                     QtCore.QFileInfo(file))
 
                 custom_widget = SoftwareItem(
                     icon,
-                    os.path.basename(file).rsplit('.', 1)[0])
+                    os.path.basename(source_file).rsplit('.', 1)[0])
 
                 item = QtWidgets.QListWidgetItem(self)
-                item.setSizeHint(QtCore.QSize(100, 100))
+                item.setSizeHint(QtCore.QSize(88, 86))
                 self.setItemWidget(item, custom_widget)
                 self.addItem(item)
 
