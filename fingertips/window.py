@@ -1,29 +1,11 @@
+import os
+
 from PySide2 import QtWidgets
 from PySide2 import QtCore
-from PySide2 import QtGui
 
-import win32api
-import win32con
-import win32gui
-
-from fingertips.widgets import SoftwareListWidget
+from fingertips.widgets import SoftwareListWidget, InputLineEdit
 from fingertips.hotkey import HotkeyThread
 from fingertips.settings import GLOBAL_HOTKEYS
-
-
-class LineEdit(QtWidgets.QLineEdit):
-    def mousePressEvent(self, event):
-        self.setCursor(QtGui.QCursor(QtCore.Qt.ClosedHandCursor))
-        win32gui.ReleaseCapture()
-        win32api.SendMessage(
-            int(self.window().winId()),
-            win32con.WM_SYSCOMMAND,
-            win32con.SC_MOVE | win32con.HTCAPTION,
-            0
-        )
-        self.setCursor(QtGui.QCursor(QtCore.Qt.IBeamCursor))
-        event.ignore()
-        super().mousePressEvent(event)
 
 
 class Fingertips(QtWidgets.QWidget):
@@ -60,7 +42,7 @@ class Fingertips(QtWidgets.QWidget):
         inner_layout.setContentsMargins(4, 4, 4, 4)
         inner_layout.setSpacing(6)
 
-        self.input_line_edit = LineEdit()
+        self.input_line_edit = InputLineEdit()
         self.input_line_edit.setPlaceholderText(self.placeholder)
         self.input_line_edit.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.input_line_edit.setMinimumHeight(66)
@@ -78,6 +60,8 @@ class Fingertips(QtWidgets.QWidget):
 
         self.software_list_widget = SoftwareListWidget()
         self.software_list_widget.setObjectName('software_list_widget')
+        self.software_list_widget.item_double_clicked.connect(
+            self.software_list_widget_item_double_clicked)
 
         inner_layout.addWidget(self.input_line_edit)
         inner_layout.addWidget(self.software_list_widget)
@@ -93,6 +77,10 @@ class Fingertips(QtWidgets.QWidget):
         hotkeys.show_main_sign.connect(self.set_visible)
         hotkeys.shortcut_triggered.connect(self.shortcut_triggered)
         hotkeys.start()
+
+    def software_list_widget_item_double_clicked(self, exe_path):
+        os.startfile(exe_path)
+        self.set_visible()
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:

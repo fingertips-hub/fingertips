@@ -2,8 +2,14 @@ import os
 
 from PySide2 import QtWidgets
 from PySide2 import QtCore
+from PySide2 import QtGui
 
+import win32api
+import win32con
+import win32gui
 import win32com.client
+
+from fingertips.db_utils import SoftwareDB
 
 
 class SoftwareItem(QtWidgets.QWidget):
@@ -49,8 +55,12 @@ class SoftwareItem(QtWidgets.QWidget):
 
 
 class SoftwareListWidget(QtWidgets.QListWidget):
+    item_double_clicked = QtCore.Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self._software_db = SoftwareDB()
 
         self.setObjectName('software_list_widget')
         self.setFlow(QtWidgets.QListWidget.LeftToRight)
@@ -59,13 +69,20 @@ class SoftwareListWidget(QtWidgets.QListWidget):
         self.setSpacing(0)
 
         self.setAcceptDrops(True)
+        self.itemDoubleClicked.connect(self._item_double_clicked)
+
+        for info in self._software_db.get_software():
+            self.add_item(info['name'], info['exe_path'])
 
     def dropEvent(self, event):
         if event.mimeData().hasUrls():
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
 
-            files = [u.toLocalFile() for u in event.mimeData().urls()]
+            files = [
+                u.toLocalFile() for u in event.mimeData().urls() if
+                u.toLocalFile().endswith(('.lnk', '.exe'))
+            ]
             for source_file in files:
                 if source_file.endswith('.lnk'):
                     shell = win32com.client.Dispatch('WScript.Shell')
@@ -74,21 +91,29 @@ class SoftwareListWidget(QtWidgets.QListWidget):
                 else:
                     file = source_file
 
-                icon = QtWidgets.QFileIconProvider().icon(
-                    QtCore.QFileInfo(file))
-
-                custom_widget = SoftwareItem(
-                    icon,
-                    os.path.basename(source_file).rsplit('.', 1)[0])
-
-                item = QtWidgets.QListWidgetItem(self)
-                item.setSizeHint(QtCore.QSize(88, 86))
-                self.setItemWidget(item, custom_widget)
-                self.addItem(item)
+                name = os.path.basename(source_file).rsplit('.', 1)[0]
+                res = self._software_db.add_software(name, file)
+                if res:
+                    self.add_item(name, file)
 
         else:
             event.setDropAction(QtCore.Qt.MoveAction)
             super().dropEvent(event)
+
+    def add_item(self, name, file_path):
+        icon = QtWidgets.QFileIconProvider().icon(
+            QtCore.QFileInfo(file_path))
+
+        custom_widget = SoftwareItem(icon, name)
+
+        item = QtWidgets.QListWidgetItem(self)
+        item.setSizeHint(QtCore.QSize(88, 86))
+        item.exe_path = file_path
+        self.setItemWidget(item, custom_widget)
+        self.addItem(item)
+
+    def _item_double_clicked(self, item):
+        self.item_double_clicked.emit(item.exe_path)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -102,3 +127,18 @@ class SoftwareListWidget(QtWidgets.QListWidget):
             event.accept()
         else:
             super().dragMoveEvent(event)
+
+
+class InputLineEdit(QtWidgets.QLineEdit):
+    def mousePressEvent(self, event):
+        self.setCursor(QtGui.QCursor(QtCore.Qt.ClosedHandCursor))
+        win32gui.ReleaseCapture()
+        win32api.SendMessage(
+            int(self.window().winId()),
+            win32con.WM_SYSCOMMAND,
+            win32con.SC_MOVE | win32con.HTCAPTION,
+            0
+        )
+        self.setCursor(QtGui.QCursor(QtCore.Qt.IBeamCursor))
+        event.ignore()
+        super().mousePressEvent(event)
