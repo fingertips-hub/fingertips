@@ -7,6 +7,7 @@ from PySide2 import QtCore
 import qtawesome
 
 from fingertips.utils import get_logger
+from fingertips.window import Fingertips
 
 
 log = get_logger('tray')
@@ -26,11 +27,12 @@ def add_action(menu, name, connect_func, parent, icon=None):
 def create_tray(app):
     tray = QtWidgets.QSystemTrayIcon()
     tray.setIcon(QtGui.QIcon('res/icon.png'))
+    window = Fingertips()
 
     menu = QtWidgets.QMenu()
     tray.setContextMenu(menu)
 
-    add_action(menu, '主窗口', lambda: print('打开主窗口'), app, 'ri.window-line')
+    add_action(menu, '主窗口', lambda: window.set_visible(), app, 'ri.window-line')
     add_action(menu, '插件商城', lambda: print('打开插件商城'), app,
                'mdi.storefront-outline')
     add_action(menu, '系统配置', lambda: print('打开系统配置'), app, 'fa.gear')
