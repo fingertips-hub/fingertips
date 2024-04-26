@@ -2,6 +2,7 @@ import os
 
 from PySide2 import QtWidgets
 from PySide2 import QtCore
+from PySide2 import QtWebEngineWidgets
 
 from fingertips.widgets import SoftwareListWidget, InputLineEdit
 from fingertips.hotkey import HotkeyThread
@@ -63,14 +64,13 @@ class Fingertips(QtWidgets.QWidget):
         self.software_list_widget.item_double_clicked.connect(
             self.software_list_widget_item_double_clicked)
 
-        self.ask_viewer = QtWidgets.QTextBrowser()
-        self.ask_viewer.setObjectName('ask_text_edit')
-        self.ask_viewer.setOpenExternalLinks(True)
-        self.ask_viewer.setReadOnly(True)
+        self.ask_viewer = QtWebEngineWidgets.QWebEngineView()
+        self.ask_viewer.setObjectName('ask_viewer')
+        self.ask_viewer.setHtml('<body style="color:white;background-color:#303133;font-size: 14px;padding: 6px;box-sizing: border-box;"></body>')
+        # self.ask_viewer.setOpenExternalLinks(True)
+        # self.ask_viewer.setReadOnly(True)
         self._set_ask_viewer_status(False)
-        self.ask_viewer.textChanged.connect(
-            lambda: self.ask_viewer.verticalScrollBar().setValue(
-                self.ask_viewer.verticalScrollBar().maximum()))
+        # self.ask_viewer.textChanged.connect(self._ask_viewer_scroll_to_bottom)
 
         inner_layout.addWidget(self.input_line_edit)
         inner_layout.addWidget(self.software_list_widget)
@@ -81,6 +81,15 @@ class Fingertips(QtWidgets.QWidget):
         layout.addWidget(inner_widget)
 
         self.input_line_edit.setFocus(QtCore.Qt.MouseFocusReason)
+
+    def _ask_viewer_scroll_to_bottom(self):
+        scrollbar = self.ask_viewer.verticalScrollBar()
+        # 检查是否已经滚动到底部
+        if scrollbar.value() != scrollbar.maximum():
+            QtCore.QTimer.singleShot(
+                100,
+                lambda: scrollbar.setValue(scrollbar.maximum())
+            )
 
     def init_hotkey(self):
         global_shortcuts = GLOBAL_HOTKEYS
@@ -118,24 +127,24 @@ class Fingertips(QtWidgets.QWidget):
         self._set_software_list_widget_status(False)
         self._set_ask_viewer_status(True)
 
-        self._set_result('<p>思考中，请稍后...</p>')
+        self._set_result('<body style="color:white;background-color:#303133;font-size: 14px;padding: 6px;box-sizing: border-box;">思考中，请稍后...</body>')
         ask_ai_thread = AskAIThread(text, self)
         ask_ai_thread.resulted.connect(self._set_result)
         ask_ai_thread.start()
 
     def _set_ask_viewer_status(self, is_show=False):
         if is_show:
-            self.ask_viewer.clear()
+            # self.ask_viewer.clear()
             self.ask_viewer.show()
             self.ask_viewer.setSizePolicy(
                 QtWidgets.QSizePolicy.Preferred,
                 QtWidgets.QSizePolicy.Preferred
             )
-            self.ask_viewer.setFixedSize(830, 300)
+            self.ask_viewer.setFixedSize(820, 300)
             self.ask_viewer.adjustSize()
         else:
             self.ask_viewer.hide()
-            self.ask_viewer.clear()
+            # self.ask_viewer.clear()
             self.ask_viewer.setSizePolicy(
                 QtWidgets.QSizePolicy.Ignored,
                 QtWidgets.QSizePolicy.Ignored
@@ -148,7 +157,7 @@ class Fingertips(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Preferred,
                 QtWidgets.QSizePolicy.Preferred
             )
-            self.software_list_widget.setFixedSize(830, 300)
+            self.software_list_widget.setFixedSize(820, 300)
             self.software_list_widget.adjustSize()
         else:
             self.software_list_widget.hide()
