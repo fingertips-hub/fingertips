@@ -9,3 +9,9 @@ GLOBAL_HOTKEYS = {
 }
 
 DB_PATH = os.path.expanduser('~/fingertips/data.db')
+
+
+OPENAI_INFO = {
+    'url': os.environ['URL'],
+    'api_key': os.environ['API_KEY']
+}

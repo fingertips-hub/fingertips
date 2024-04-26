@@ -6,6 +6,7 @@ from PySide2 import QtCore
 from fingertips.widgets import SoftwareListWidget, InputLineEdit
 from fingertips.hotkey import HotkeyThread
 from fingertips.settings import GLOBAL_HOTKEYS
+from fingertips.core import AskAIThread
 
 
 class Fingertips(QtWidgets.QWidget):
@@ -13,7 +14,6 @@ class Fingertips(QtWidgets.QWidget):
         super().__init__(parent=parent)
 
         self.placeholder = 'Hello, Fingertips!'
-        self.clipboard = QtWidgets.QApplication.clipboard()
 
         pos = QtWidgets.QDesktopWidget().availableGeometry().center()
         pos.setX(pos.x() - (self.width() / 2) - 100)
@@ -63,8 +63,19 @@ class Fingertips(QtWidgets.QWidget):
         self.software_list_widget.item_double_clicked.connect(
             self.software_list_widget_item_double_clicked)
 
+        self.ask_viewer = QtWidgets.QTextBrowser()
+        self.ask_viewer.setObjectName('ask_text_edit')
+        self.ask_viewer.setOpenExternalLinks(True)
+        self.ask_viewer.setReadOnly(True)
+        self._set_ask_viewer_status(False)
+        self.ask_viewer.textChanged.connect(
+            lambda: self.ask_viewer.verticalScrollBar().setValue(
+                self.ask_viewer.verticalScrollBar().maximum()))
+
         inner_layout.addWidget(self.input_line_edit)
         inner_layout.addWidget(self.software_list_widget)
+        inner_layout.addWidget(self.ask_viewer)
+
         # layout.addWidget(self.result_list_widget)
 
         layout.addWidget(inner_widget)
@@ -95,11 +106,63 @@ class Fingertips(QtWidgets.QWidget):
         with open('res/theme.css') as f:
             self.setStyleSheet(f.read())
 
-    def input_line_edit_return_pressed(self, text):
-        pass
+    def _set_result(self, text):
+        print(text)
+        self.ask_viewer.setHtml(text)
+
+    def input_line_edit_return_pressed(self):
+        text = self.input_line_edit.text().strip()
+        if not text:
+            return
+
+        self._set_software_list_widget_status(False)
+        self._set_ask_viewer_status(True)
+
+        self._set_result('<p>思考中，请稍后...</p>')
+        ask_ai_thread = AskAIThread(text, self)
+        ask_ai_thread.resulted.connect(self._set_result)
+        ask_ai_thread.start()
+
+    def _set_ask_viewer_status(self, is_show=False):
+        if is_show:
+            self.ask_viewer.clear()
+            self.ask_viewer.show()
+            self.ask_viewer.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred,
+                QtWidgets.QSizePolicy.Preferred
+            )
+            self.ask_viewer.setFixedSize(830, 300)
+            self.ask_viewer.adjustSize()
+        else:
+            self.ask_viewer.hide()
+            self.ask_viewer.clear()
+            self.ask_viewer.setSizePolicy(
+                QtWidgets.QSizePolicy.Ignored,
+                QtWidgets.QSizePolicy.Ignored
+            )
+
+    def _set_software_list_widget_status(self, is_show=False):
+        if is_show:
+            self.software_list_widget.show()
+            self.software_list_widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred,
+                QtWidgets.QSizePolicy.Preferred
+            )
+            self.software_list_widget.setFixedSize(830, 300)
+            self.software_list_widget.adjustSize()
+        else:
+            self.software_list_widget.hide()
+            self.software_list_widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Ignored,
+                QtWidgets.QSizePolicy.Ignored
+            )
 
     def input_line_edit_text_changed(self, text):
-        pass
+        if text:
+            return
+
+        self._set_ask_viewer_status(False)
+        self._set_software_list_widget_status(True)
 
     def set_show(self):
         self.setVisible(True)
@@ -109,6 +172,7 @@ class Fingertips(QtWidgets.QWidget):
     def set_visible(self):
         if self.isVisible():
             self.input_line_edit.setText('')
+            self.software_list_widget.clearSelection()
             self.setVisible(False)
         else:
             self.set_show()
