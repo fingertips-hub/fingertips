@@ -3,11 +3,13 @@ import os
 from PySide2 import QtWidgets
 from PySide2 import QtCore
 from PySide2 import QtGui
+from PySide2 import QtWebEngineWidgets
 
 import win32api
 import win32con
 import win32gui
 import win32com.client
+import qtawesome as qta
 
 from fingertips.db_utils import SoftwareDB
 
@@ -142,3 +144,58 @@ class InputLineEdit(QtWidgets.QLineEdit):
         self.setCursor(QtGui.QCursor(QtCore.Qt.IBeamCursor))
         event.ignore()
         super().mousePressEvent(event)
+
+
+class AskAIView(QtWebEngineWidgets.QWebEngineView):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.page().setBackgroundColor(QtGui.QColor('#303133'))
+
+    def contextMenuEvent(self, event):
+        pass
+
+
+class AskAIWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.is_loading = False
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        header_layout = QtWidgets.QHBoxLayout()
+        header_layout.setAlignment(QtCore.Qt.AlignRight)
+        header_layout.setContentsMargins(0, 0, 12, 0)
+
+        self.button = QtWidgets.QPushButton()
+        self.button.setStyleSheet(
+            'background-color: #303133; border: 0px')
+        header_layout.addWidget(self.button)
+        layout.addLayout(header_layout)
+
+        self.spin_icon = qta.icon(
+            'fa5s.spinner', color='#ddd', animation=qta.Spin(self.button)
+        )
+
+        self.ask_view = AskAIView()
+        layout.addWidget(self.ask_view)
+
+        self.button.clicked.connect(self.button_clicked)
+
+    def button_clicked(self):
+        if self.is_loading:
+            return
+
+        print('copy...')
+
+    def hide_loading(self):
+        self.is_loading = False
+        self.button.setIcon(qta.icon('fa.paper-plane', color='#eee'))
+
+    def show_loading(self):
+        self.is_loading = True
+        self.button.setIcon(self.spin_icon)
+
+    def set_html(self, html):
+        self.ask_view.setHtml(html)
