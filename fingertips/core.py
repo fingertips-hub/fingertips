@@ -62,7 +62,7 @@ class AskAIThread(QtCore.QThread):
     @staticmethod
     def default_message():
         return '''<body style="color:white;background-color:#303133;
-            font-size: 14px;padding: 0 6px;box-sizing: border-box;">
+            font-size: 14px;padding: 0 4px;box-sizing: border-box;">
         思考中，请稍后...
         </body>'''
 
@@ -74,10 +74,10 @@ class AskAIThread(QtCore.QThread):
         <title>Document</title>
         <style> {self.pygments_css} </style>
         <style>.codehilite {{padding: 6px;box-sizing: border-box;border-radius: 6px; }}</style>
-        <style>code{{padding: 4px; background-color: #272822;box-sizing: border-box;border-radius: 2px}}</style>
+        <style>code{{padding: 4px; margin: 0 2px; background-color: #272822;box-sizing: border-box;border-radius: 2px}}</style>
         <style>
         ::-webkit-scrollbar {{
-            width: 10px; /* 设置滚动条的宽度 */
+            width: 8px; /* 设置滚动条的宽度 */
         }}
         /* 滚动条轨道 */
         ::-webkit-scrollbar-track {{
@@ -95,5 +95,5 @@ class AskAIThread(QtCore.QThread):
         }}
         </style>
         </head> 
-        <body style="background-color: #303133;color: white; font-size:14px; padding: 0 6px;box-sizing: border-box;overflow-x: hidden;line-height:22px;">{html_content}</body> 
+        <body style="background-color: #303133;color: white; font-size:14px; padding: 0 4px;box-sizing: border-box;overflow-x: hidden;line-height:22px;">{html_content}</body> 
         </html> """
