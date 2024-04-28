@@ -12,15 +12,14 @@ class SoftwareDB(object):
         self._db = dataset.connect(f'sqlite:///{DB_PATH}')
         self.table = self._db['software']
 
-    def add_software(self, name, exe_path):
+    def add_software(self, name, exe_path, lnk_path=''):
         data = self.table.find_one(exe_path=exe_path)
         if not data:
-            self.table.insert({'name': name, 'exe_path': exe_path})
+            self.table.insert({
+                'name': name, 'exe_path': exe_path, 'lnk_path': lnk_path})
             return True
 
         return False
 
     def get_software(self):
         return self.table.all()
-
-

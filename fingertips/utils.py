@@ -1,9 +1,10 @@
 import os
 import sys
 import logging
+from ctypes import windll
 from logging.handlers import TimedRotatingFileHandler
 
-from ctypes import windll
+import win32com.client
 from settings import RECORD_LOG, DEBUG
 
 
@@ -79,3 +80,12 @@ def clear_clipboard():
     if windll.user32.OpenClipboard(None):
         windll.user32.EmptyClipboard()
         windll.user32.CloseClipboard()
+
+
+def get_exe_path(file_path):
+    if file_path.endswith('.lnk'):
+        shell = win32com.client.Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(file_path)
+        return shortcut.Targetpath
+
+    return file_path

@@ -8,10 +8,10 @@ from PySide2 import QtWebEngineWidgets
 import win32api
 import win32con
 import win32gui
-import win32com.client
 import qtawesome as qta
 
 from fingertips.db_utils import SoftwareDB
+from fingertips.utils import get_exe_path
 
 
 class SoftwareItem(QtWidgets.QWidget):
@@ -74,7 +74,7 @@ class SoftwareListWidget(QtWidgets.QListWidget):
         self.itemDoubleClicked.connect(self._item_double_clicked)
 
         for info in self._software_db.get_software():
-            self.add_item(info['name'], info['exe_path'])
+            self.add_item(info['name'], info['exe_path'], info['lnk_path'])
 
     def dropEvent(self, event):
         if event.mimeData().hasUrls():
@@ -83,26 +83,21 @@ class SoftwareListWidget(QtWidgets.QListWidget):
 
             files = [
                 u.toLocalFile() for u in event.mimeData().urls() if
-                u.toLocalFile().endswith(('.lnk', '.exe'))
+                u.toLocalFile().endswith(('.lnk', '.exe')) or
+                os.path.isdir(u.toLocalFile())
             ]
             for source_file in files:
-                if source_file.endswith('.lnk'):
-                    shell = win32com.client.Dispatch('WScript.Shell')
-                    shortcut = shell.CreateShortCut(source_file)
-                    file = shortcut.Targetpath
-                else:
-                    file = source_file
-
+                file = get_exe_path(source_file)
                 name = os.path.basename(source_file).rsplit('.', 1)[0]
-                res = self._software_db.add_software(name, file)
+                res = self._software_db.add_software(name, file, source_file)
                 if res:
-                    self.add_item(name, file)
+                    self.add_item(name, file, source_file)
 
         else:
             event.setDropAction(QtCore.Qt.MoveAction)
             super().dropEvent(event)
 
-    def add_item(self, name, file_path):
+    def add_item(self, name, file_path, lnk_path):
         icon = QtWidgets.QFileIconProvider().icon(
             QtCore.QFileInfo(file_path))
 
@@ -110,12 +105,12 @@ class SoftwareListWidget(QtWidgets.QListWidget):
 
         item = QtWidgets.QListWidgetItem(self)
         item.setSizeHint(QtCore.QSize(88, 86))
-        item.exe_path = file_path
+        item.path = lnk_path or file_path
         self.setItemWidget(item, custom_widget)
         self.addItem(item)
 
     def _item_double_clicked(self, item):
-        self.item_double_clicked.emit(item.exe_path)
+        self.item_double_clicked.emit(item.path)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -169,32 +164,51 @@ class AskAIWidget(QtWidgets.QWidget):
         header_layout.setContentsMargins(0, 0, 12, 0)
 
         self.button = QtWidgets.QPushButton()
-        self.button.setStyleSheet(
-            'background-color: #303133; border: 0px')
+        self.copy_button = QtWidgets.QPushButton()
+        self.button.setIconSize(QtCore.QSize(20, 20))
+        self.copy_button.setIconSize(QtCore.QSize(26, 26))
+
+        button_style = 'background-color: #303133; border: 0px'
+        self.button.setStyleSheet(button_style)
+        self.copy_button.setStyleSheet(button_style)
+
         header_layout.addWidget(self.button)
+        header_layout.addWidget(self.copy_button)
         layout.addLayout(header_layout)
 
         self.spin_icon = qta.icon(
             'fa5s.spinner', color='#ddd', animation=qta.Spin(self.button)
         )
+        self.publish_icon = qta.icon('fa.paper-plane', color='#eee')
+
+        self.enable_copy_icon = qta.icon('ri.file-copy-2-fill', color='#ddd')
+        self.disable_copy_icon = qta.icon('ri.file-copy-2-fill', color='#555')
 
         self.ask_view = AskAIView()
         layout.addWidget(self.ask_view)
 
         self.button.clicked.connect(self.button_clicked)
+        self.copy_button.clicked.connect(self.copy_button_clicked)
 
     def button_clicked(self):
         if self.is_loading:
             return
 
-        print('copy...')
+        print('submit...')
+
+    def copy_button_clicked(self):
+        print('copying...')
 
     def hide_loading(self):
         self.is_loading = False
-        self.button.setIcon(qta.icon('fa.paper-plane', color='#eee'))
+        self.copy_button.setIcon(self.enable_copy_icon)
+        self.copy_button.setEnabled(True)
+        self.button.setIcon(self.publish_icon)
 
     def show_loading(self):
         self.is_loading = True
+        self.copy_button.setIcon(self.disable_copy_icon)
+        self.copy_button.setEnabled(False)
         self.button.setIcon(self.spin_icon)
 
     def set_html(self, html):
