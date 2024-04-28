@@ -154,6 +154,7 @@ class AskAIWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.is_loading = False
+        self.source_text = ''
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -197,7 +198,8 @@ class AskAIWidget(QtWidgets.QWidget):
         print('submit...')
 
     def copy_button_clicked(self):
-        print('copying...')
+        QtWidgets.QApplication.clipboard().setText(self.source_text)
+        print('copy finished...')
 
     def hide_loading(self):
         self.is_loading = False

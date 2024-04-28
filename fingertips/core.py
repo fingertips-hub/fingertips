@@ -12,6 +12,7 @@ log = get_logger('core')
 
 class AskAIThread(QtCore.QThread):
     resulted = QtCore.Signal(str)
+    finished = QtCore.Signal(str)
 
     def __init__(self, question, parent=None):
         super().__init__(parent)
@@ -54,10 +55,12 @@ class AskAIThread(QtCore.QThread):
                             self.markdown_parser.convert(res_test.strip())
                         ))
         except Exception as e:
+            res_test = f'```{str(e)}```'
             self.resulted.emit(
-                self.generate_style(
-                    self.markdown_parser.convert(f'```{str(e)}```')
-                ))
+                self.generate_style(self.markdown_parser.convert(res_test))
+            )
+
+        self.finished.emit(res_test.strip())
 
     @staticmethod
     def default_message():

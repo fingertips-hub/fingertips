@@ -123,8 +123,12 @@ class Fingertips(QtWidgets.QWidget):
 
         ask_ai_thread = AskAIThread(text, self)
         ask_ai_thread.resulted.connect(self._set_result)
-        ask_ai_thread.finished.connect(self.ask_viewer.hide_loading)
+        ask_ai_thread.finished.connect(self.ask_ai_thread_finished)
         ask_ai_thread.start()
+
+    def ask_ai_thread_finished(self, text):
+        self.ask_viewer.source_text = text
+        self.ask_viewer.hide_loading()
 
     def _set_ask_viewer_status(self, is_show=False):
         if is_show:
