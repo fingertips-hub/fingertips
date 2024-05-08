@@ -1,0 +1,26 @@
+#result_item {
+    background-color: #303133;
+}
+
+#img_label {
+    margin: 5px;
+    color: #ffffff;
+    font-size: 14px;
+    font-family: Microsoft YaHei;
+}
+
+#title_label {
+    margin-left: 2px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: Microsoft YaHei;
+    color: #cccccc;
+}
+
+#title_label:hover {
+    color: #ffffff;
+}
+
+#description_label {
+    color: #cccccc;
+}

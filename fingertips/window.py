@@ -6,7 +6,7 @@ from PySide2 import QtCore
 from fingertips.widgets import SoftwareListWidget, InputLineEdit, AskAIWidget
 from fingertips.hotkey import HotkeyThread
 from fingertips.settings import GLOBAL_HOTKEYS
-from fingertips.core import AskAIThread
+from fingertips.core.thread import AskAIThread
 
 
 class Fingertips(QtWidgets.QWidget):
