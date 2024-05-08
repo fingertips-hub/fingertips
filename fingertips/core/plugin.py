@@ -2,6 +2,7 @@ import os
 import pkgutil
 from fingertips.widgets import ResultItem
 from fingertips.utils import get_logger
+from fingertips.core import AbstractBase
 
 log = get_logger(u'注册插件')
 
@@ -18,14 +19,17 @@ class PluginRegister(object):
     def _load_plugins(self):
         self._plugins_storage = {}
         for importer, package_name, _ in pkgutil.iter_modules(
-                [os.path.join(os.path.dirname(os.path.dirname(__file__)), 'plugins')]):
-            module = importer.find_module(package_name).load_module(package_name)
+                [os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                              'plugins')]):
+            module = importer.find_module(package_name).load_module(
+                package_name)
             for cls_str in dir(module):
                 class_obj = getattr(module, cls_str)
                 if hasattr(class_obj, 'need_register'):
                     obj = class_obj()
                     if obj.keyword in self._plugins_storage:
-                        log.error('Keyword {} already exists.'.format(obj.keyword))
+                        log.error(
+                            'Keyword {} already exists.'.format(obj.keyword))
                         raise ValueError('Keyword already exists.')
                     obj.main_window = self.main_window
                     self._plugins_storage[obj.keyword] = obj
@@ -48,7 +52,8 @@ class PluginRegister(object):
             return []
 
         return [ResultItem(o.title, o.description, o.keyword, o.icon_path)
-                for k, o in sorted(self._plugins_storage.items(), key=lambda x: x[0])
+                for k, o in
+                sorted(self._plugins_storage.items(), key=lambda x: x[0])
                 if text in k]
 
     def get_query_result(self, keyword, text):
@@ -58,7 +63,8 @@ class PluginRegister(object):
         return []
 
     def execute(self, keyword, execute_str, result_item, plugin_by_keyword):
-        return self._plugins_storage[keyword].run(execute_str, result_item, plugin_by_keyword)
+        return self._plugins_storage[keyword].run(
+            execute_str, result_item, plugin_by_keyword)
 
     def get_plugin(self, keyword):
         return self._plugins_storage.get(keyword)
@@ -67,7 +73,25 @@ class PluginRegister(object):
         return self._plugins_storage
 
     def get_keyword_by_shortcut(self):
-        return {o.shortcut: o.keyword for o in self._plugins_storage.values() if o.shortcut}
+        return {o.shortcut: o.keyword for o in self._plugins_storage.values()
+                if o.shortcut}
+
+
+class AbstractPlugin(AbstractBase):
+    title = ''
+    keyword = ''
+    icon = ''
+    description = ''
+    shortcut = ''
+
+    main_window = None  # 这个值不需要初始化，在插件加载时，会自动设置为全局Quicker对象
+    _verify_fields = ['title', 'keyword', 'description']
+
+    def run(self, text, result_item, plugin_by_keyword):
+        raise NotImplementedError
+
+    def query(self, text):
+        pass
 
 
 if __name__ == '__main__':

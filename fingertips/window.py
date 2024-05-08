@@ -7,14 +7,22 @@ from fingertips.widgets import SoftwareListWidget, InputLineEdit, AskAIWidget
 from fingertips.hotkey import HotkeyThread
 from fingertips.settings import GLOBAL_HOTKEYS
 from fingertips.core.thread import AskAIThread
+from fingertips.core.plugin import PluginRegister
+from fingertips.utils import get_logger
+
+log = get_logger('Fingertips')
 
 
 class Fingertips(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.placeholder = 'Hello, Fingertips!'
+        self.RESULT_ITEM_HEIGHT = 62
 
         self.init_ui()
+
+        self.plugin_register = PluginRegister(self)
+
         self.init_hotkey()
 
     def set_position(self):
@@ -51,11 +59,11 @@ class Fingertips(QtWidgets.QWidget):
         self.input_line_edit.textChanged.connect(
             self.input_line_edit_text_changed)
 
-        # self.result_list_widget = QtWidgets.QListWidget()
-        # self.result_list_widget.setObjectName('result_list_widget')
-        # self.result_list_widget.setFocusPolicy(Qt.ClickFocus)
-        # self.result_list_widget.keyPressEvent = self.result_list_key_press_event
-        # self.result_list_widget.itemClicked.connect(self.execute_result_item)
+        self.result_list_widget = QtWidgets.QListWidget()
+        self.result_list_widget.setObjectName('result_list_widget')
+        self.result_list_widget.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.result_list_widget.keyPressEvent = self.result_list_key_press_event
+        self.result_list_widget.itemClicked.connect(self.execute_result_item)
 
         self.software_list_widget = SoftwareListWidget()
         self.software_list_widget.setObjectName('software_list_widget')
@@ -65,16 +73,45 @@ class Fingertips(QtWidgets.QWidget):
         self.ask_viewer = AskAIWidget()
         self.ask_viewer.setObjectName('ask_viewer')
         self._set_ask_viewer_status(False)
+        self._set_result_list_widget_status(False)
 
         inner_layout.addWidget(self.input_line_edit)
         inner_layout.addWidget(self.software_list_widget)
         inner_layout.addWidget(self.ask_viewer)
 
-        # layout.addWidget(self.result_list_widget)
+        inner_layout.addWidget(self.result_list_widget)
 
         layout.addWidget(inner_widget)
 
         self.input_line_edit.setFocus(QtCore.Qt.MouseFocusReason)
+
+    def result_list_key_press_event(self, event):
+        if event.key() == QtCore.Qt.Key_Return:
+            return self.execute_result_item(
+                self.result_list_widget.currentItem())
+        if event.key() == QtCore.Qt.Key_Backspace:
+            self.input_line_edit.setFocus(QtCore.Qt.MouseFocusReason)
+            self.result_list_widget.setCurrentRow(-1)
+            self.input_line_edit.setText(self.input_line_edit.text()[:-1])
+            return
+
+        super(QtWidgets.QListWidget, self.result_list_widget).keyPressEvent(
+            event)
+
+    def execute_result_item(self, item):
+        result_item = self.result_list_widget.itemWidget(item)
+        if not result_item:
+            return
+
+        input_text = self.input_line_edit.text().strip()
+        if result_item.keyword and (
+                input_text == result_item.keyword or
+                not input_text.startswith(result_item.keyword)):
+            self.input_line_edit.setText(result_item.keyword + ' ')
+            self.input_line_edit.setFocus(QtCore.Qt.MouseFocusReason)
+            self.result_list_widget.setCurrentRow(-1)
+        else:
+            self.input_line_edit_return_pressed()
 
     def _ask_viewer_scroll_to_bottom(self):
         scrollbar = self.ask_viewer.verticalScrollBar()
@@ -87,6 +124,15 @@ class Fingertips(QtWidgets.QWidget):
 
     def init_hotkey(self):
         global_shortcuts = GLOBAL_HOTKEYS
+        plugin_shortcuts = self.plugin_register.get_keyword_by_shortcut()
+        if set(global_shortcuts) & set(plugin_shortcuts):
+            log.error('There are duplicate shortcuts.')
+            log.error(u'global_shortcuts: {}'.format(global_shortcuts))
+            log.error(u'plugin_shortcuts: {}'.format(plugin_shortcuts))
+            raise ValueError('There are duplicate shortcuts.')
+
+        global_shortcuts.update(self.plugin_register.get_keyword_by_shortcut())
+
         hotkeys = HotkeyThread(global_shortcuts, self)
         hotkeys.show_main_sign.connect(self.set_visible)
         hotkeys.shortcut_triggered.connect(self.shortcut_triggered)
@@ -102,8 +148,13 @@ class Fingertips(QtWidgets.QWidget):
 
         return super().keyPressEvent(event)
 
-    def shortcut_triggered(self):
-        print('shortcut_triggered')
+    def shortcut_triggered(self, plugin_name):
+        if self.plugin_register.get_plugin(plugin_name):
+            self.set_show()
+            self.input_line_edit.setText(plugin_name + ' ')
+
+        if plugin_name in GLOBAL_HOTKEYS.values():
+            getattr(self, plugin_name)()
 
     def load_style(self):
         with open('res/theme.css') as f:
@@ -117,7 +168,47 @@ class Fingertips(QtWidgets.QWidget):
         if not text:
             return
 
+        if text.startswith('/'):
+            if self.result_list_widget.count() < 1:
+                return
+            if len(text.split(' ', 1)) == 2:
+                plugin_keyword, execute_str = text.strip().split(' ', 1)
+                plugin_keyword = plugin_keyword[1:]
+            else:
+                plugin_keyword = next(iter(
+                    self.result_list_widget.itemWidget(
+                        self.result_list_widget.item(i)).keyword
+                    for i in range(self.result_list_widget.count()) if
+                    self.result_list_widget.itemWidget(
+                        self.result_list_widget.item(i)).keyword == text[1:]
+                ), '')
+                execute_str = ''
+
+            if not plugin_keyword:
+                return
+
+            result_item = None
+            if self.result_list_widget.selectedItems():
+                result_item = self.result_list_widget.itemWidget(
+                    self.result_list_widget.currentItem())
+            elif self.result_list_widget.count() == 1:
+                result_item = self.result_list_widget.itemWidget(
+                    self.result_list_widget.item(0))
+            result_items = self.plugin_register.execute(
+                plugin_keyword, execute_str, result_item,
+                self.plugin_register.plugins()
+            )
+
+            if not result_items:
+                self.input_line_edit.clear()
+                self.close()
+            else:
+                self.add_items(result_items)
+
+            return
+
         self._set_software_list_widget_status(False)
+        self._set_result_list_widget_status(False)
         self._set_ask_viewer_status(True)
         self.ask_viewer.show_loading()
 
@@ -162,18 +253,68 @@ class Fingertips(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Ignored
             )
 
+    def _set_result_list_widget_status(self, is_show=False):
+        if is_show:
+            self.result_list_widget.show()
+            self.result_list_widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred,
+                QtWidgets.QSizePolicy.Preferred
+            )
+            self.result_list_widget.setFixedSize(820, 300)
+            self.result_list_widget.adjustSize()
+        else:
+            self.result_list_widget.hide()
+            self.result_list_widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Ignored,
+                QtWidgets.QSizePolicy.Ignored
+            )
+
     def input_line_edit_text_changed(self, text):
         if text:
+            if not text.startswith('/'):
+                return
+
+            self._set_ask_viewer_status(False)
+            self._set_software_list_widget_status(False)
+            self._set_result_list_widget_status(True)
+
+            if ' ' not in text.strip():
+                plugin_keyword = text.strip()[1:]
+                result_items = self.plugin_register.search_plugin(
+                    plugin_keyword)
+            else:
+                plugin_keyword, query_str = text.strip().split(' ', 1)
+                result_items = self.plugin_register.get_query_result(
+                    plugin_keyword[1:], query_str)
+
+            if result_items:
+                self.add_items(result_items)
             return
 
+        self._set_result_list_widget_status(False)
         self._set_ask_viewer_status(False)
         self._set_software_list_widget_status(True)
+
+    def add_items(self, result_items):
+        self.result_list_widget.clear()
+
+        for item in result_items:
+            self.add_item(item)
+
+    def add_item(self, result_item):
+        item = QtWidgets.QListWidgetItem()
+        item.setSizeHint(QtCore.QSize(200, self.RESULT_ITEM_HEIGHT))
+        self.result_list_widget.addItem(item)
+        self.result_list_widget.setItemWidget(item, result_item)
 
     def set_show(self):
         self.set_position()
         self.setVisible(True)
         self.activateWindow()
         self.input_line_edit.setFocus(QtCore.Qt.MouseFocusReason)
+
+    def reload_plugin(self):
+        self.plugin_register.reload_plugins()
 
     def set_visible(self):
         if self.isVisible():
