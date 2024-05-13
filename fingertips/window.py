@@ -2,13 +2,15 @@ import os
 
 from PySide2 import QtWidgets
 from PySide2 import QtCore
+import pyautogui
 
 from fingertips.widgets import SoftwareListWidget, InputLineEdit, AskAIWidget
 from fingertips.hotkey import HotkeyThread
 from fingertips.settings import GLOBAL_HOTKEYS
 from fingertips.core.thread import AskAIThread
 from fingertips.core.plugin import PluginRegister
-from fingertips.utils import get_logger
+from fingertips.core.action import ActionRegister
+from fingertips.utils import get_logger, clear_clipboard
 
 log = get_logger('Fingertips')
 
@@ -18,10 +20,12 @@ class Fingertips(QtWidgets.QWidget):
         super().__init__(parent=parent)
         self.placeholder = 'Hello, Fingertips!'
         self.RESULT_ITEM_HEIGHT = 62
+        self.clipboard = QtWidgets.QApplication.clipboard()
 
         self.init_ui()
 
         self.plugin_register = PluginRegister(self)
+        self.action_register = ActionRegister(self)
 
         self.init_hotkey()
 
@@ -155,6 +159,31 @@ class Fingertips(QtWidgets.QWidget):
 
         if plugin_name in GLOBAL_HOTKEYS.values():
             getattr(self, plugin_name)()
+
+    def show_menus(self):
+        clear_clipboard()
+        pyautogui.hotkey('ctrl', 'c')
+
+        urls = self.clipboard.mimeData().urls()
+        urls = [u.toLocalFile() for u in urls if os.path.exists(u.toLocalFile())]
+        text = self.clipboard.mimeData().text()
+
+        if not urls and not text:
+            data = {
+                'type': 'empty'
+            }
+        elif not urls and text:
+            data = {
+                'type': 'text',
+                'text': text
+            }
+        else:
+            data = {
+                'type': 'urls',
+                'urls': urls
+            }
+
+        log.info(u'已调用quicker menus，{}'.format(data))
 
     def load_style(self):
         with open('res/theme.css') as f:
