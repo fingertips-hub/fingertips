@@ -1,7 +1,7 @@
 import os
 import dataset
 
-from fingertips.settings import DB_PATH
+from fingertips.config import DB_PATH
 
 
 class SoftwareDB(object):

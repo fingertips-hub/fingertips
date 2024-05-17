@@ -8,6 +8,7 @@ import qtawesome
 
 from fingertips.utils import get_logger
 from fingertips.window import Fingertips
+from fingertips.settings.main import SettingsWindow
 
 
 log = get_logger('tray')
@@ -32,10 +33,10 @@ def create_tray(app):
     menu = QtWidgets.QMenu()
     tray.setContextMenu(menu)
 
+    settings_window = SettingsWindow()
+
     add_action(menu, '主窗口', lambda: window.set_visible(), app, 'ri.window-line')
-    add_action(menu, '插件商城', lambda: print('打开插件商城'), app,
-               'mdi.storefront-outline')
-    add_action(menu, '系统配置', lambda: print('打开系统配置'), app, 'fa.gear')
+    add_action(menu, '系统配置', settings_window.show, app, 'fa.gear')
     add_action(menu, '退出', app.exit, app, 'mdi.power-standby')
 
     return tray

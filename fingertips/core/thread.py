@@ -3,7 +3,7 @@ import markdown2
 from PySide2 import QtCore
 from pygments.formatters import HtmlFormatter
 
-from fingertips.settings import OPENAI_INFO
+from fingertips.config import OPENAI_INFO
 from fingertips.utils import get_logger
 
 

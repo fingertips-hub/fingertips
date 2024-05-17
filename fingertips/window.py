@@ -6,7 +6,7 @@ import pyautogui
 
 from fingertips.widgets import SoftwareListWidget, InputLineEdit, AskAIWidget
 from fingertips.hotkey import HotkeyThread
-from fingertips.settings import GLOBAL_HOTKEYS
+from fingertips.config import GLOBAL_HOTKEYS
 from fingertips.core.thread import AskAIThread
 from fingertips.core.plugin import PluginRegister
 from fingertips.core.action import ActionRegister

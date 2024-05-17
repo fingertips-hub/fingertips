@@ -5,7 +5,7 @@ from ctypes import windll
 from logging.handlers import TimedRotatingFileHandler
 
 import win32com.client
-from fingertips.settings import RECORD_LOG, DEBUG
+from fingertips.config import RECORD_LOG, DEBUG
 
 
 class SingleLogger(object):
