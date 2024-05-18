@@ -11,6 +11,7 @@ from qfluentwidgets import (NavigationItemPosition, MessageBox, MSFluentWindow,
 from qfluentwidgets import FluentIcon as FIF
 
 from fingertips.settings.setting_page import SettingPage
+from fingertips.settings.ai_action_page import AIActionPage
 
 
 class Widget(QFrame):
@@ -31,8 +32,8 @@ class SettingsWindow(MSFluentWindow):
         super().__init__()
 
         # create sub interface
-        self.homeInterface = SettingPage(self)
-        self.appInterface = Widget('Application Interface', self)
+        self.setting_page = SettingPage(self)
+        self.ai_action_page = AIActionPage(self)
         self.videoInterface = Widget('Video Interface', self)
         self.libraryInterface = Widget('library Interface', self)
 
@@ -40,9 +41,9 @@ class SettingsWindow(MSFluentWindow):
         self.initWindow()
 
     def initNavigation(self):
-        self.addSubInterface(self.homeInterface, FIF.SETTING, '设置',
+        self.addSubInterface(self.setting_page, FIF.SETTING, '设置',
                              FIF.SETTING)
-        self.addSubInterface(self.appInterface, FIF.APPLICATION, 'AI功能')
+        self.addSubInterface(self.ai_action_page, FIF.APPLICATION, 'AI功能')
         self.addSubInterface(self.videoInterface, FIF.VIDEO, '视频')
 
         self.addSubInterface(self.libraryInterface, FIF.BOOK_SHELF, '库',
@@ -56,8 +57,7 @@ class SettingsWindow(MSFluentWindow):
             position=NavigationItemPosition.BOTTOM,
         )
 
-        self.navigationInterface.setCurrentItem(
-            self.homeInterface.objectName())
+        self.navigationInterface.setCurrentItem(self.setting_page.objectName())
 
     def initWindow(self):
         self.resize(900, 700)
