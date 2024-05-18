@@ -8,7 +8,8 @@ GLOBAL_HOTKEYS = {
     'F8': 'show_menus'
 }
 
-DB_PATH = os.path.expanduser('~/fingertips/data.db')
+CONFIG_ROOT = os.path.expanduser('~/fingertips')
+DB_PATH = os.path.join(CONFIG_ROOT, 'data.db')
 
 
 OPENAI_INFO = {

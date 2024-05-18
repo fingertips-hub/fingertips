@@ -42,7 +42,7 @@ class SettingsWindow(MSFluentWindow):
     def initNavigation(self):
         self.addSubInterface(self.homeInterface, FIF.SETTING, '设置',
                              FIF.SETTING)
-        self.addSubInterface(self.appInterface, FIF.APPLICATION, '应用')
+        self.addSubInterface(self.appInterface, FIF.APPLICATION, 'AI功能')
         self.addSubInterface(self.videoInterface, FIF.VIDEO, '视频')
 
         self.addSubInterface(self.libraryInterface, FIF.BOOK_SHELF, '库',

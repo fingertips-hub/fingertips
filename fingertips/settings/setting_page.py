@@ -5,30 +5,46 @@ from PySide2 import QtCore
 import qfluentwidgets
 from qfluentwidgets import FluentIcon
 
+from fingertips.settings.config_model import config_model
+
 
 class LineEditSettingCard(qfluentwidgets.SettingCard):
-    def __init__(self, icon, title, text='', is_password=False,
+    def __init__(self, icon, title, config_item, is_password=False,
                  content=None, parent=None):
         super().__init__(icon, title, content, parent)
+        self.config_item = config_item
 
         if is_password:
             self.line_edit = qfluentwidgets.PasswordLineEdit(self)
         else:
             self.line_edit = qfluentwidgets.LineEdit(self)
         self.line_edit.setMinimumWidth(300)
-        self.line_edit.setText(text)
+        self.line_edit.setText(config_item.value)
         self.hBoxLayout.addWidget(self.line_edit)
         self.hBoxLayout.addSpacing(16)
 
+        self.line_edit.editingFinished.connect(self.line_edit_finished)
+
+    def line_edit_finished(self):
+        qfluentwidgets.qconfig.set(self.config_item, self.line_edit.text().strip())
+
 
 class SpinBoxSettingCard(qfluentwidgets.SettingCard):
-    def __init__(self, icon, title, value=0.0, content=None, parent=None):
+    def __init__(self, icon, title, config_item, content=None, parent=None):
         super().__init__(icon, title, content, parent)
+        self.config_item = config_item
 
         self.spin_box = qfluentwidgets.DoubleSpinBox(self)
-        self.spin_box.setValue(value)
+        self.spin_box.setValue(config_item.value)
+        self.spin_box.setRange(*self.config_item.range)
+        self.spin_box.setSingleStep(0.1)
         self.hBoxLayout.addWidget(self.spin_box)
         self.hBoxLayout.addSpacing(16)
+
+        self.spin_box.valueChanged.connect(self.spin_box_value_changed)
+
+    def spin_box_value_changed(self, value):
+        qfluentwidgets.qconfig.set(self.config_item, value)
 
 
 class AddModelMessageBox(qfluentwidgets.MessageBoxBase):
@@ -53,13 +69,55 @@ class AddModelMessageBox(qfluentwidgets.MessageBoxBase):
         self.yesButton.setDisabled(not bool(text.strip()))
 
 
+class ModelRadio(qfluentwidgets.RadioButton):
+    deleted = QtCore.Signal(object)
+
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+        self.setText(text)
+
+        self.delete_button = qfluentwidgets.ToolButton(FluentIcon.CLOSE, self)
+        self.delete_button.setFixedSize(34, 24)
+        self.delete_button.setIconSize(QtCore.QSize(10, 10))
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 50, 0)
+
+        layout.addWidget(self.delete_button, 0, QtCore.Qt.AlignRight)
+
+        self.delete_button.clicked.connect(self.delete_button_clicked)
+
+    def delete_button_clicked(self):
+        view = qfluentwidgets.TeachingTipView(
+            icon=None,
+            title='删除',
+            content=f'确定要删除 {self.text()} ?',
+        )
+
+        button = qfluentwidgets.PushButton('确定')
+        button.clicked.connect(self.ok_button_clicked)
+        button.setFixedWidth(100)
+        view.addWidget(button)
+
+        t = qfluentwidgets.TeachingTip.make(view, self.delete_button, 3000, parent=self)
+        view.closed.connect(t.close)
+
+    def ok_button_clicked(self):
+        self.deleted.emit(self)
+
+    def __getattr__(self, item):
+        return getattr(self.radio_button, item)
+
+
 class ModelListCard(qfluentwidgets.ExpandGroupSettingCard):
     model_changed = QtCore.Signal(str)
     model_added = QtCore.Signal(str)
 
-    def __init__(self, icon, title, models, current_model='', content=None, message_box_parent=None,
+    def __init__(self, icon, title, models, current_model, content=None, message_box_parent=None,
                  parent=None):
         super().__init__(icon, title, content, parent)
+        self.models = models
+        self.current_model = current_model
         self.message_box_parent = message_box_parent
 
         self.choice_label = qfluentwidgets.BodyLabel(self)
@@ -76,11 +134,12 @@ class ModelListCard(qfluentwidgets.ExpandGroupSettingCard):
         self.button_group = QtWidgets.QButtonGroup(self)
         self.button_group.buttonClicked.connect(self._radio_button_clicked)
 
-        for model in models:
-            radio = qfluentwidgets.RadioButton(model, self.radio_widget)
+        for model in qfluentwidgets.qconfig.get(models):
+            radio = ModelRadio(model, self.radio_widget)
+            radio.deleted.connect(self._model_radio_deleted)
             self.button_group.addButton(radio)
             self.radio_layout.addWidget(radio)
-            if model == current_model:
+            if model == qfluentwidgets.qconfig.get(current_model):
                 radio.setChecked(True)
 
         self.add_model_widget = QtWidgets.QWidget(self.view)
@@ -97,7 +156,7 @@ class ModelListCard(qfluentwidgets.ExpandGroupSettingCard):
         self.add_model_layout.addWidget(self.add_model_button, 0, QtCore.Qt.AlignRight)
         self.add_model_layout.setSizeConstraint(QtWidgets.QHBoxLayout.SetMinimumSize)
 
-        self.choice_label.setText(self.button_group.checkedButton().text())
+        self.choice_label.setText(self.current_model.value)
         self.choice_label.adjustSize()
 
         self.viewLayout.setSpacing(0)
@@ -105,13 +164,38 @@ class ModelListCard(qfluentwidgets.ExpandGroupSettingCard):
         self.addGroupWidget(self.radio_widget)
         self.addGroupWidget(self.add_model_widget)
 
+    def _model_radio_deleted(self, item):
+        text = item.text()
+
+        self.radio_layout.removeWidget(item)
+        self.button_group.removeButton(item)
+        item.deleteLater()
+
+        if text == self.choice_label.text():
+            self.choice_label.setText('')
+
+            qfluentwidgets.qconfig.set(
+                self.current_model,
+                ''
+            )
+
+        qfluentwidgets.qconfig.set(
+            self.models,
+            [b.text() for b in self.button_group.buttons()]
+        )
+
+        self._adjust_view_size(False)
+
     def _radio_button_clicked(self, button):
         self.choice_label.setText(button.text())
-        self.model_changed.emit(button.text())
+        qfluentwidgets.qconfig.set(self.current_model, button.text())
 
-    def _adjust_view_size(self):
+    def _adjust_view_size(self, is_add=True):
         """ adjust view size """
-        h = self.viewLayout.sizeHint().height() + self.add_model_widget.height()
+        if is_add:
+            h = self.viewLayout.sizeHint().height() + self.add_model_widget.height() - 14
+        else:
+            h = self.viewLayout.sizeHint().height() - (self.add_model_widget.height() / 2) - 7
         self.spaceWidget.setFixedHeight(h)
 
         if self.isExpand:
@@ -121,10 +205,16 @@ class ModelListCard(qfluentwidgets.ExpandGroupSettingCard):
         w = AddModelMessageBox(self.message_box_parent)
         if w.exec():
             model = w.model_edit.text().strip()
-            radio = qfluentwidgets.RadioButton(model, self.radio_widget)
+            radio = ModelRadio(model, self.radio_widget)
+            radio.deleted.connect(self._model_radio_deleted)
             self.button_group.addButton(radio)
             self.radio_layout.addWidget(radio)
-            self.model_added.emit(model)
+
+            qfluentwidgets.qconfig.set(
+                self.models,
+                [b.text() for b in self.button_group.buttons()]
+            )
+
             self._adjust_view_size()
 
 
@@ -148,7 +238,7 @@ class SettingPage(qfluentwidgets.ScrollArea):
         self.main_window_card = LineEditSettingCard(
             FluentIcon.FIT_PAGE,
             '主窗口快捷键',
-            'ctrl+`',
+            config_model.main_window_shortcut,
             content='呼出主窗口的快捷键',
             parent=self.shortcut_group
         )
@@ -156,7 +246,7 @@ class SettingPage(qfluentwidgets.ScrollArea):
         self.menu_window_card = LineEditSettingCard(
             FluentIcon.MENU,
             '快捷菜单快捷键',
-            'F8',
+            config_model.action_menu_shortcut,
             content='呼出快捷菜单的快捷键',
             parent=self.shortcut_group
         )
@@ -165,13 +255,14 @@ class SettingPage(qfluentwidgets.ScrollArea):
         self.openai_base_card = LineEditSettingCard(
             FluentIcon.VPN,
             'OpenAI 代理地址',
-            'https://oneapi.gptnb.me/v1',
+            config_model.openai_base,
             content='必须包含 http(s)://',
             parent=self.ai_group
         )
         self.openai_key_card = LineEditSettingCard(
             FluentIcon.VPN,
             'OpenAI API Key',
+            config_model.openai_key,
             is_password=True,
             content='使用自己的 OpenAI Key',
             parent=self.ai_group
@@ -179,8 +270,8 @@ class SettingPage(qfluentwidgets.ScrollArea):
         self.default_model_card = ModelListCard(
             FluentIcon.VPN,
             '默认模型',
-            ['gpt-4o', 'gpt-3.5-turbo'],
-            'gpt-4o',
+            config_model.openai_models,
+            config_model.openai_current_model,
             content='可用的模型列表，设置模型会在模型会作为默认模型',
             message_box_parent=self,
             parent=self.ai_group
@@ -188,7 +279,7 @@ class SettingPage(qfluentwidgets.ScrollArea):
         self.default_temperature_card = SpinBoxSettingCard(
             FluentIcon.VPN,
             '默认 Temperature',
-            0.6,
+            config_model.openai_temperature,
             '设置默认 Temperature 值',
             self.ai_group
         )
@@ -198,6 +289,7 @@ class SettingPage(qfluentwidgets.ScrollArea):
             FluentIcon.UPDATE,
             '在软件启动时检查更新',
             '新版本将更加稳定并拥有更多功能（建议启动此选项）',
+            config_model.update_on_start,
             parent=self.update_group
         )
 
