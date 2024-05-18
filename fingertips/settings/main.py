@@ -4,7 +4,7 @@ from PySide2 import QtGui
 
 
 from PySide2.QtCore import Qt, QUrl
-from PySide2.QtGui import QIcon, QDesktopServices
+from PySide2.QtGui import QIcon, QDesktopServices, QGuiApplication
 from PySide2.QtWidgets import QApplication, QFrame, QHBoxLayout
 from qfluentwidgets import (NavigationItemPosition, MessageBox, MSFluentWindow,
                             SubtitleLabel, setFont)
@@ -40,8 +40,8 @@ class SettingsWindow(MSFluentWindow):
         self.initWindow()
 
     def initNavigation(self):
-        self.addSubInterface(self.homeInterface, FIF.HOME, '主页',
-                             FIF.HOME_FILL)
+        self.addSubInterface(self.homeInterface, FIF.SETTING, '设置',
+                             FIF.SETTING)
         self.addSubInterface(self.appInterface, FIF.APPLICATION, '应用')
         self.addSubInterface(self.videoInterface, FIF.VIDEO, '视频')
 
@@ -64,7 +64,7 @@ class SettingsWindow(MSFluentWindow):
         self.setWindowIcon(QtGui.QIcon('res/icon.png'))
         self.setWindowTitle('Fingertips Settings')
 
-        desktop = QApplication.desktop().availableGeometry()
+        desktop = QGuiApplication.primaryScreen().availableGeometry()
         w, h = desktop.width(), desktop.height()
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
