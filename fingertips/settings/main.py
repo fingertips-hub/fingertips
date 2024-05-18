@@ -10,6 +10,8 @@ from qfluentwidgets import (NavigationItemPosition, MessageBox, MSFluentWindow,
                             SubtitleLabel, setFont)
 from qfluentwidgets import FluentIcon as FIF
 
+from fingertips.settings.setting_page import SettingPage
+
 
 class Widget(QFrame):
 
@@ -29,7 +31,7 @@ class SettingsWindow(MSFluentWindow):
         super().__init__()
 
         # create sub interface
-        self.homeInterface = Widget('Home Interface', self)
+        self.homeInterface = SettingPage(self)
         self.appInterface = Widget('Application Interface', self)
         self.videoInterface = Widget('Video Interface', self)
         self.libraryInterface = Widget('library Interface', self)
@@ -77,3 +79,10 @@ class SettingsWindow(MSFluentWindow):
 
         if w.exec():
             QDesktopServices.openUrl(QUrl("https://afdian.net/a/zhiyiYo"))
+
+
+if __name__ == '__main__':
+    app = QApplication([])
+    sw = SettingsWindow()
+    sw.show()
+    app.exec_()
