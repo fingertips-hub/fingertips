@@ -2,15 +2,14 @@ import os
 
 from PySide2 import QtWidgets
 from PySide2 import QtCore
-import pyautogui
 
 from fingertips.widgets import SoftwareListWidget, InputLineEdit, AskAIWidget
 from fingertips.hotkey import HotkeyThread
 from fingertips.core.thread import AskAIThread
 from fingertips.core.plugin import PluginRegister
 from fingertips.core.action import ActionRegister
-from fingertips.utils import get_logger, clear_clipboard
-from fingertips.action_menu import ActionMenu
+from fingertips.utils import get_logger, get_select_entity
+from fingertips.action_menu import ActionMenu, AIResultWindow
 from fingertips.settings.config_model import config_model
 
 log = get_logger('Fingertips')
@@ -21,7 +20,7 @@ class Fingertips(QtWidgets.QWidget):
         super().__init__(parent=parent)
         self.placeholder = 'Hello, Fingertips!'
         self.RESULT_ITEM_HEIGHT = 62
-        self.clipboard = QtWidgets.QApplication.clipboard()
+        self.ai_view = None
 
         self.init_ui()
 
@@ -130,7 +129,8 @@ class Fingertips(QtWidgets.QWidget):
     def init_hotkey(self):
         global_shortcuts = {
             config_model.main_window_shortcut.value: '',
-            config_model.action_menu_shortcut.value: 'show_menus'
+            config_model.action_menu_shortcut.value: 'show_menus',
+            config_model.ai_resend_shortcut.value: 'ai_resend',
         }
         plugin_shortcuts = self.plugin_register.get_keyword_by_shortcut()
         if set(global_shortcuts) & set(plugin_shortcuts):
@@ -163,54 +163,35 @@ class Fingertips(QtWidgets.QWidget):
 
         global_shortcuts = {
             config_model.main_window_shortcut.value: '',
-            config_model.action_menu_shortcut.value: 'show_menus'
+            config_model.action_menu_shortcut.value: 'show_menus',
+            config_model.ai_resend_shortcut.value: 'ai_resend'
         }
         if plugin_name in global_shortcuts.values():
             getattr(self, plugin_name)()
 
     def show_menus(self):
-        clear_clipboard()
-        pyautogui.hotkey('ctrl', 'c')
-
-        urls = self.clipboard.mimeData().urls()
-        urls = [u.toLocalFile() for u in urls if os.path.exists(u.toLocalFile())]
-        text = self.clipboard.mimeData().text()
-
-        if not urls and not text:
-            data = {
-                'type': 'empty'
-            }
-        elif not urls and text:
-            data = {
-                'type': 'text',
-                'text': text
-            }
-        else:
-            data = {
-                'type': 'urls',
-                'urls': urls
-            }
-
+        data = get_select_entity()
         log.info(u'已调用quicker menus，{}'.format(data))
 
         rm = ActionMenu()
         rm.triggered.connect(self.action_menu_triggered)
         rm.show_menu(data)
 
+    def ai_resend(self):
+        if self.ai_view is None:
+            return
+
+        self.ai_view.resend_button_clicked()
+
     def action_menu_triggered(self, data):
         if data['select']['type'] == 'text':
-            ask_ai_thread = AskAIThread(
-                data['select']['text'],
-                data['action']['model'],
-                data['action']['temperature'],
-                data['action']['max_tokens'],
-                data['action']['prompt'],
-                convert_markdown=False,
-                parent=self
-            )
-            ask_ai_thread.resulted.connect(lambda x: print(x))
-            ask_ai_thread.finished.connect(lambda x: print(x))
-            ask_ai_thread.start()
+            self.ai_view = AIResultWindow(data)
+            self.ai_view.closed.connect(self.ai_view_closed)
+            self.ai_view.request()
+            self.ai_view.show()
+
+    def ai_view_closed(self):
+        self.ai_view = None
 
     def load_style(self):
         with open('res/theme.css') as f:

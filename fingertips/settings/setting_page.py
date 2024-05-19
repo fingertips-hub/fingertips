@@ -251,6 +251,14 @@ class SettingPage(qfluentwidgets.ScrollArea):
             parent=self.shortcut_group
         )
 
+        self.ai_convenient_mode_card = LineEditSettingCard(
+            FluentIcon.SPEED_HIGH,
+            'AI便捷模式快捷键',
+            config_model.ai_resend_shortcut,
+            content='可以快速使用AI便捷模式进行请求的快捷键',
+            parent=self.shortcut_group
+        )
+
         self.ai_group = qfluentwidgets.SettingCardGroup('全局AI设置', self.scroll_widget)
         self.openai_base_card = LineEditSettingCard(
             FluentIcon.VPN,
@@ -317,6 +325,7 @@ class SettingPage(qfluentwidgets.ScrollArea):
 
         self.shortcut_group.addSettingCard(self.main_window_card)
         self.shortcut_group.addSettingCard(self.menu_window_card)
+        self.shortcut_group.addSettingCard(self.ai_convenient_mode_card)
 
         self.ai_group.addSettingCard(self.openai_base_card)
         self.ai_group.addSettingCard(self.openai_key_card)

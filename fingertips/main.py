@@ -5,6 +5,7 @@ from PySide2 import QtWidgets
 from PySide2 import QtGui
 from PySide2 import QtCore
 import qtawesome
+import qfluentwidgets
 
 from fingertips.utils import get_logger
 from fingertips.window import Fingertips
@@ -53,9 +54,11 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app.setWindowIcon(QtGui.QIcon('res/icon.png'))
+    app.setAttribute(QtCore.Qt.AA_DontCreateNativeWidgetSiblings)
 
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('fingertips')
 
+    qfluentwidgets.setThemeColor('#AB62BA')
     tray = create_tray(app)
     tray.show()
 

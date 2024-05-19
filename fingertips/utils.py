@@ -4,7 +4,10 @@ import logging
 from ctypes import windll
 from logging.handlers import TimedRotatingFileHandler
 
+from PySide2 import QtWidgets
+import pyautogui
 import win32com.client
+
 from fingertips.config import RECORD_LOG, DEBUG
 
 
@@ -89,3 +92,31 @@ def get_exe_path(file_path):
         return shortcut.Targetpath
 
     return file_path
+
+
+def get_select_entity():
+    clear_clipboard()
+    clipboard = QtWidgets.QApplication.clipboard()
+
+    pyautogui.hotkey('ctrl', 'c')
+
+    urls = clipboard.mimeData().urls()
+    urls = [u.toLocalFile() for u in urls if os.path.exists(u.toLocalFile())]
+    text = clipboard.mimeData().text()
+
+    if not urls and not text:
+        data = {
+            'type': 'empty'
+        }
+    elif not urls and text:
+        data = {
+            'type': 'text',
+            'text': text
+        }
+    else:
+        data = {
+            'type': 'urls',
+            'urls': urls
+        }
+
+    return data

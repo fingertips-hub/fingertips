@@ -12,6 +12,7 @@ class UrlValidator(qfluentwidgets.ConfigValidator):
 class Config(qfluentwidgets.QConfig):
     main_window_shortcut = qfluentwidgets.ConfigItem('shortcut', 'main_window', 'ctrl+`')
     action_menu_shortcut = qfluentwidgets.ConfigItem('shortcut', 'action_menu', 'F8')
+    ai_resend_shortcut = qfluentwidgets.ConfigItem('shortcut', 'ai_resend_shortcut', 'F7')
 
     openai_base = qfluentwidgets.ConfigItem(
         'openai', 'base', 'https://api.openai.com/v1', UrlValidator())

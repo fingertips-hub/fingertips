@@ -2,10 +2,12 @@ import sys
 
 from PySide2 import QtGui
 
-
 from PySide2.QtCore import Qt, QUrl
 from PySide2.QtGui import QIcon, QDesktopServices, QGuiApplication
 from PySide2.QtWidgets import QApplication, QFrame, QHBoxLayout
+
+
+import qfluentwidgets
 from qfluentwidgets import (NavigationItemPosition, MessageBox, MSFluentWindow,
                             SubtitleLabel, setFont)
 from qfluentwidgets import FluentIcon as FIF
@@ -40,7 +42,6 @@ class SettingsWindow(MSFluentWindow):
         self.libraryInterface = Widget('library Interface', self)
 
         self.initNavigation()
-
 
     def initNavigation(self):
         self.addSubInterface(self.setting_page, FIF.SETTING, '设置',
