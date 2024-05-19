@@ -30,6 +30,8 @@ class Widget(QFrame):
 class SettingsWindow(MSFluentWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowIcon(QtGui.QIcon('res/icon.png'))
+        self.setWindowTitle('Fingertips Settings')
 
         # create sub interface
         self.setting_page = SettingPage(self)
@@ -38,7 +40,7 @@ class SettingsWindow(MSFluentWindow):
         self.libraryInterface = Widget('library Interface', self)
 
         self.initNavigation()
-        self.initWindow()
+
 
     def initNavigation(self):
         self.addSubInterface(self.setting_page, FIF.SETTING, '设置',
@@ -59,15 +61,6 @@ class SettingsWindow(MSFluentWindow):
 
         self.navigationInterface.setCurrentItem(self.setting_page.objectName())
 
-    def initWindow(self):
-        self.resize(900, 700)
-        self.setWindowIcon(QtGui.QIcon('res/icon.png'))
-        self.setWindowTitle('Fingertips Settings')
-
-        desktop = QGuiApplication.primaryScreen().availableGeometry()
-        w, h = desktop.width(), desktop.height()
-        self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
-
     def showMessageBox(self):
         w = MessageBox(
             '支持作者🥰',
@@ -79,6 +72,14 @@ class SettingsWindow(MSFluentWindow):
 
         if w.exec():
             QDesktopServices.openUrl(QUrl("https://afdian.net/a/zhiyiYo"))
+
+    def show(self):
+        self.resize(900, 700)
+        desktop = QGuiApplication.primaryScreen().availableGeometry()
+        w, h = desktop.width(), desktop.height()
+        self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
+
+        super().show()
 
 
 if __name__ == '__main__':

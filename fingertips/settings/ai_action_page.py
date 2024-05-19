@@ -182,6 +182,12 @@ class AddPresetForm(qframelesswindow.FramelessDialog):
         w, h = desktop.width(), desktop.height()
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            event.ignore()
+        else:
+            super().keyPressEvent(event)
+
     def save_button_clicked(self):
         name = self.name_line.text().strip()
         if not name:
@@ -283,16 +289,16 @@ class AIActionPage(QtWidgets.QWidget):
         apf = AddPresetForm(data, parent=self)
         apf.exec_()
 
+        new_data = apf.info
         if data['name'] == apf.info['name']:
-            new_data = data
-            self.db.update_action(data)
+            self.db.update_action(new_data)
         else:
-            new_data = apf.info
             new_data.update({'enabled': data['enabled'], 'type': data['type']})
             self.db.delete_action(data['name'])
             self.db.add_action(new_data)
 
         self.ai_actions.update_action(data['name'], new_data)
+        qfluentwidgets.InfoBar.success('提示', f'{new_data["name"]} 已成功保存！', parent=self)
 
     def _action_delete(self, data):
         w = qfluentwidgets.Dialog('删除', f'你确定要删除 {data["name"]} ？', self)

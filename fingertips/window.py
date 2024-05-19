@@ -6,11 +6,12 @@ import pyautogui
 
 from fingertips.widgets import SoftwareListWidget, InputLineEdit, AskAIWidget
 from fingertips.hotkey import HotkeyThread
-from fingertips.config import GLOBAL_HOTKEYS
 from fingertips.core.thread import AskAIThread
 from fingertips.core.plugin import PluginRegister
 from fingertips.core.action import ActionRegister
 from fingertips.utils import get_logger, clear_clipboard
+from fingertips.action_menu import ActionMenu
+from fingertips.settings.config_model import config_model
 
 log = get_logger('Fingertips')
 
@@ -127,7 +128,10 @@ class Fingertips(QtWidgets.QWidget):
             )
 
     def init_hotkey(self):
-        global_shortcuts = GLOBAL_HOTKEYS
+        global_shortcuts = {
+            config_model.main_window_shortcut.value: '',
+            config_model.action_menu_shortcut.value: 'show_menus'
+        }
         plugin_shortcuts = self.plugin_register.get_keyword_by_shortcut()
         if set(global_shortcuts) & set(plugin_shortcuts):
             log.error('There are duplicate shortcuts.')
@@ -157,7 +161,11 @@ class Fingertips(QtWidgets.QWidget):
             self.set_show()
             self.input_line_edit.setText(plugin_name + ' ')
 
-        if plugin_name in GLOBAL_HOTKEYS.values():
+        global_shortcuts = {
+            config_model.main_window_shortcut.value: '',
+            config_model.action_menu_shortcut.value: 'show_menus'
+        }
+        if plugin_name in global_shortcuts.values():
             getattr(self, plugin_name)()
 
     def show_menus(self):
@@ -184,6 +192,25 @@ class Fingertips(QtWidgets.QWidget):
             }
 
         log.info(u'已调用quicker menus，{}'.format(data))
+
+        rm = ActionMenu()
+        rm.triggered.connect(self.action_menu_triggered)
+        rm.show_menu(data)
+
+    def action_menu_triggered(self, data):
+        if data['select']['type'] == 'text':
+            ask_ai_thread = AskAIThread(
+                data['select']['text'],
+                data['action']['model'],
+                data['action']['temperature'],
+                data['action']['max_tokens'],
+                data['action']['prompt'],
+                convert_markdown=False,
+                parent=self
+            )
+            ask_ai_thread.resulted.connect(lambda x: print(x))
+            ask_ai_thread.finished.connect(lambda x: print(x))
+            ask_ai_thread.start()
 
     def load_style(self):
         with open('res/theme.css') as f:
@@ -241,7 +268,7 @@ class Fingertips(QtWidgets.QWidget):
         self._set_ask_viewer_status(True)
         self.ask_viewer.show_loading()
 
-        ask_ai_thread = AskAIThread(text, self)
+        ask_ai_thread = AskAIThread(text, parent=self)
         ask_ai_thread.resulted.connect(self._set_result)
         ask_ai_thread.finished.connect(self.ask_ai_thread_finished)
         ask_ai_thread.start()

@@ -3,9 +3,8 @@ import markdown2
 from PySide2 import QtCore
 from pygments.formatters import HtmlFormatter
 
-from fingertips.config import OPENAI_INFO
 from fingertips.utils import get_logger
-
+from fingertips.settings.config_model import config_model
 
 log = get_logger('core')
 
@@ -14,12 +13,18 @@ class AskAIThread(QtCore.QThread):
     resulted = QtCore.Signal(str)
     finished = QtCore.Signal(str)
 
-    def __init__(self, question, parent=None):
+    def __init__(self, question, model='', temperature=None, max_tokens=0, system_prompt='',
+                 convert_markdown=True, parent=None):
         super().__init__(parent)
-        self.question = question
+        self.question = system_prompt.replace('{{TEXT}}', question) or question
+        self.model = model or config_model.openai_current_model.value
+        self.temperature = temperature or config_model.openai_temperature.value
+        self.max_tokens = max_tokens or openai.NotGiven()
+        self.convert_markdown = convert_markdown
+
         self.openai_client = openai.OpenAI(
-            api_key=OPENAI_INFO['api_key'],
-            base_url=OPENAI_INFO['url']
+            api_key=config_model.openai_key.value,
+            base_url=config_model.openai_base.value
         )
         self.markdown_parser = markdown2.Markdown(
             extras=["fenced-code-blocks", "code-friendly", "cuddled-lists"]
@@ -32,42 +37,54 @@ class AskAIThread(QtCore.QThread):
         self.resulted.emit(self.default_message())
 
         log.info('starting ask ai....')
-        response = self.openai_client.chat.completions.create(
-            model='gpt-3.5-turbo',
-            messages=[{
-                'role': 'user',
-                'content': self.question
-            }],
-            stream=True
-        )
-
-        log.info('waiting response...')
-        res_test = ''
         try:
+            response = self.openai_client.chat.completions.create(
+                model=self.model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                messages=[{
+                    'role': 'user',
+                    'content': self.question
+                }],
+                stream=True
+            )
+
+            log.info('waiting response...')
+            res_test = ''
             for chunk in response:
                 if not chunk.choices:
                     continue
 
                 if chunk.choices[0].delta.content is not None:
                     res_test += chunk.choices[0].delta.content
-                    self.resulted.emit(
-                        self.generate_style(
-                            self.markdown_parser.convert(res_test.strip())
-                        ))
+                    if self.convert_markdown:
+                        data = self.generate_style(
+                            self.markdown_parser.convert(res_test)
+                        )
+                        self.resulted.emit(data)
+                    else:
+                        self.resulted.emit(res_test)
+
         except Exception as e:
-            res_test = f'```{str(e)}```'
-            self.resulted.emit(
-                self.generate_style(self.markdown_parser.convert(res_test))
-            )
+            if self.convert_markdown:
+                res_test = f'请求错误：```{str(e)}```'
+                self.resulted.emit(
+                    self.generate_style(self.markdown_parser.convert(res_test))
+                )
+            else:
+                res_test = f'请求错误：{str(e)}'
+                self.resulted.emit(res_test)
 
         self.finished.emit(res_test.strip())
 
-    @staticmethod
-    def default_message():
-        return '''<body style="color:white;background-color:#303133;
-            font-size: 14px;padding: 0 4px;box-sizing: border-box;">
-        思考中，请稍后...
-        </body>'''
+    def default_message(self):
+        if self.convert_markdown:
+            return '''<body style="color:white;background-color:#303133;
+                font-size: 14px;padding: 0 4px;box-sizing: border-box;">
+            思考中，请稍后...
+            </body>'''
+        else:
+            return '思考中，请稍后...'
 
     def generate_style(self, html_content):
         return f"""
