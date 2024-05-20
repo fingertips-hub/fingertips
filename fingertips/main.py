@@ -18,9 +18,9 @@ log = get_logger('tray')
 def add_action(menu, name, connect_func, parent, icon=None):
     if icon:
         icon = qtawesome.icon(icon)
-        action = QtWidgets.QAction(icon, name, parent)
+        action = qfluentwidgets.Action(icon, name, parent)
     else:
-        action = QtWidgets.QAction(name, parent)
+        action = qfluentwidgets.Action(name, parent)
     action.triggered.connect(connect_func)
     menu.addAction(action)
     return action
@@ -31,7 +31,7 @@ def create_tray(app):
     tray.setIcon(QtGui.QIcon('res/icon.png'))
     window = Fingertips()
 
-    menu = QtWidgets.QMenu()
+    menu = qfluentwidgets.SystemTrayMenu()
     tray.setContextMenu(menu)
 
     settings_window = SettingsWindow()

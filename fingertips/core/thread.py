@@ -52,18 +52,19 @@ class AskAIThread(QtCore.QThread):
             log.info('waiting response...')
             res_test = ''
             for chunk in response:
-                if not chunk.choices:
-                    continue
+                if not self.isInterruptionRequested():
+                    if not chunk.choices:
+                        continue
 
-                if chunk.choices[0].delta.content is not None:
-                    res_test += chunk.choices[0].delta.content
-                    if self.convert_markdown:
-                        data = self.generate_style(
-                            self.markdown_parser.convert(res_test)
-                        )
-                        self.resulted.emit(data)
-                    else:
-                        self.resulted.emit(res_test)
+                    if chunk.choices[0].delta.content is not None:
+                        res_test += chunk.choices[0].delta.content
+                        if self.convert_markdown:
+                            data = self.generate_style(
+                                self.markdown_parser.convert(res_test)
+                            )
+                            self.resulted.emit(data)
+                        else:
+                            self.resulted.emit(res_test)
 
         except Exception as e:
             if self.convert_markdown:

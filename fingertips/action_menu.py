@@ -21,6 +21,8 @@ class AIResultWindow(qframelesswindow.FramelessDialog):
         super().__init__(parent)
         self.is_loading = False
         self.data = data
+        self.ask_res_thread = None
+
         self.resize(600, 400)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
@@ -76,6 +78,7 @@ class AIResultWindow(qframelesswindow.FramelessDialog):
 
     def resend_button_clicked(self):
         if self.is_loading:
+            self.ask_res_thread.requestInterruption()
             return
 
         if self.super_switch.isChecked():
@@ -104,7 +107,7 @@ class AIResultWindow(qframelesswindow.FramelessDialog):
     def request(self):
         self.view.setText('')
 
-        ask_res_thread = AskAIThread(
+        self.ask_res_thread = AskAIThread(
             self.data['select']['text'],
             self.data['action']['model'],
             self.data['action']['temperature'],
@@ -114,9 +117,9 @@ class AIResultWindow(qframelesswindow.FramelessDialog):
             parent=self
         )
 
-        ask_res_thread.resulted.connect(self.set_view)
-        ask_res_thread.finished.connect(self.hide_loading)
-        ask_res_thread.start()
+        self.ask_res_thread.resulted.connect(self.set_view)
+        self.ask_res_thread.finished.connect(self.hide_loading)
+        self.ask_res_thread.start()
 
         self.show_loading()
 

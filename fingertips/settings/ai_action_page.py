@@ -119,7 +119,8 @@ class AIActions(qfluentwidgets.ScrollArea):
         action.deleteLater()
 
     def update_action(self, name, data):
-        action = self.action_by_name[name]
+        action = self.action_by_name.pop(name)
+        self.action_by_name[data['name']] = action
         action.update_data(data)
 
 
@@ -127,6 +128,7 @@ class AddPresetForm(qframelesswindow.FramelessDialog):
     def __init__(self, info=None, parent=None):
         super().__init__(parent)
         self.info = info or {}
+        self.is_submitted = False
         self.db = AIActionDB()
         self.resize(600, 600)
 
@@ -217,6 +219,7 @@ class AddPresetForm(qframelesswindow.FramelessDialog):
             'prompt': prompt
         }
 
+        self.is_submitted = True
         self.close()
 
     def show_message(self, content, overwrite=False):
@@ -289,11 +292,14 @@ class AIActionPage(QtWidgets.QWidget):
         apf = AddPresetForm(data, parent=self)
         apf.exec_()
 
+        if not apf.is_submitted:
+            return
+
         new_data = apf.info
+        new_data.update({'enabled': data['enabled'], 'type': data['type']})
         if data['name'] == apf.info['name']:
             self.db.update_action(new_data)
         else:
-            new_data.update({'enabled': data['enabled'], 'type': data['type']})
             self.db.delete_action(data['name'])
             self.db.add_action(new_data)
 
