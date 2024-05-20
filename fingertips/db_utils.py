@@ -49,3 +49,9 @@ class AIActionDB(DBBase):
 
     def update_action(self, data):
         return self.table.update(data, ['name'])
+
+
+class CozeActionDB(AIActionDB):
+    def __init__(self):
+        super().__init__()
+        self.table = self._db['coze_actions']

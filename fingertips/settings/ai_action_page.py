@@ -9,11 +9,16 @@ import qfluentwidgets
 from qfluentwidgets import FluentIcon
 
 from fingertips.settings.config_model import config_model
-from fingertips.db_utils import AIActionDB
+from fingertips.db_utils import AIActionDB, CozeActionDB
 
 
 class AIActionType:
     PRESET = 'preset'
+
+
+class LittleSubtitleLabel(qfluentwidgets.FluentLabelBase):
+    def getFont(self):
+        return qfluentwidgets.getFont(16, QtGui.QFont.DemiBold)
 
 
 class AIActionCard(qfluentwidgets.CardWidget):
@@ -122,6 +127,111 @@ class AIActions(qfluentwidgets.ScrollArea):
         action = self.action_by_name.pop(name)
         self.action_by_name[data['name']] = action
         action.update_data(data)
+
+
+class CozeCustomVarItem(qfluentwidgets.CardWidget):
+    deleted = QtCore.Signal(dict)
+
+    def __init__(self, key, value, parent=None):
+        super().__init__(parent)
+
+        self.key_line = qfluentwidgets.LineEdit()
+        self.key_line.setText(key)
+        self.value_line = qfluentwidgets.LineEdit()
+        self.value_line.setText(value)
+        self.delete_button = qfluentwidgets.TransparentToolButton(FluentIcon.DELETE, self)
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setSpacing(12)
+        layout.setContentsMargins(18, 16, 12, 16)
+        layout.addWidget(qfluentwidgets.BodyLabel('Key: ', self), 0, QtCore.Qt.AlignLeft)
+        layout.addWidget(self.key_line, 0, QtCore.Qt.AlignLeft)
+        layout.addWidget(qfluentwidgets.BodyLabel('Value: ', self), 0, QtCore.Qt.AlignLeft)
+        layout.addWidget(self.value_line, 0, QtCore.Qt.AlignLeft)
+        layout.addSpacerItem(QtWidgets.QSpacerItem(
+            10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
+        layout.addWidget(self.delete_button, 0, QtCore.Qt.AlignRight)
+
+
+class CozeCustomVarScrollArea(qfluentwidgets.ScrollArea):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumHeight(200)
+        self.setStyleSheet(
+            'QScrollArea {border: none; background:transparent}'
+        )
+
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setWidgetResizable(True)
+
+        self.scroll_widget = QtWidgets.QWidget()
+        self.main_layout = QtWidgets.QVBoxLayout(self.scroll_widget)
+        self.main_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.main_layout.setContentsMargins(0, 2, 12, 6)
+        self.setWidget(self.scroll_widget)
+
+    def add_item(self, key='', value=''):
+        item = CozeCustomVarItem(key, value, self)
+        self.main_layout.addWidget(item)
+
+
+class CozeForm(qframelesswindow.FramelessDialog):
+    def __init__(self, info=None, parent=None):
+        super().__init__(parent)
+        self.info = info or {}
+        self.is_submitted = False
+        self.db = CozeActionDB()
+        self.resize(600, 500)
+
+        self.title_label = qfluentwidgets.SubtitleLabel(
+            f'{"编辑" if self.info else "添加"} Coze Bot', self)
+
+        self.bot_id = qfluentwidgets.LineEdit()
+        self.user_id = qfluentwidgets.LineEdit()
+        self.user_id.setText(config_model.coze_user_id.value)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(qfluentwidgets.BodyLabel('Bot ID: ', self), 0, 0)
+        layout.addWidget(self.bot_id, 0, 1)
+        layout.addWidget(qfluentwidgets.BodyLabel('User Id: ', self), 1, 0)
+        layout.addWidget(self.user_id, 1, 1)
+
+        self.save_button = qfluentwidgets.PrimaryPushButton('保存', self)
+        self.save_button.setMinimumWidth(120)
+        self.save_button.clicked.connect(self.save_button_clicked)
+
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(12)
+        main_layout.setAlignment(QtCore.Qt.AlignTop)
+        main_layout.addWidget(self.title_label, 0, QtCore.Qt.AlignLeft)
+        main_layout.addLayout(layout)
+
+        custom_layout = QtWidgets.QHBoxLayout()
+        custom_layout.setContentsMargins(6, 6, 8, 2)
+        custom_layout.addWidget(LittleSubtitleLabel('自定义变量', self), 0, QtCore.Qt.AlignLeft)
+
+        self.add_custom_var_button = qfluentwidgets.ToolButton(FluentIcon.ADD, self)
+        self.add_custom_var_button.clicked.connect(self.add_custom_var_button_clicked)
+        custom_layout.addWidget(self.add_custom_var_button, 0, QtCore.Qt.AlignRight)
+        main_layout.addLayout(custom_layout)
+
+        self.coze_custom_var_widget = CozeCustomVarScrollArea()
+        main_layout.addWidget(self.coze_custom_var_widget)
+
+        main_layout.addWidget(self.save_button, 0, QtCore.Qt.AlignRight)
+
+        qfluentwidgets.FluentStyleSheet.DIALOG.apply(self)
+
+        desktop = QtGui.QGuiApplication.primaryScreen().availableGeometry()
+        w, h = desktop.width(), desktop.height()
+        self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
+
+    def add_custom_var_button_clicked(self):
+        self.coze_custom_var_widget.add_item()
+
+    def save_button_clicked(self):
+        pass
 
 
 class AddPresetForm(qframelesswindow.FramelessDialog):
@@ -259,6 +369,10 @@ class AIActionPage(QtWidgets.QWidget):
         preset_action.triggered.connect(self.preset_action_triggered)
         self.button_menu.addAction(preset_action)
 
+        coze_action = qfluentwidgets.Action(FluentIcon.HEADPHONE, 'Coze Bot', self)
+        coze_action.triggered.connect(self.coze_action_triggered)
+        self.button_menu.addAction(coze_action)
+
         self.add_button = qfluentwidgets.PrimaryDropDownPushButton(FluentIcon.ADD, '添加', self)
         self.add_button.setMenu(self.button_menu)
 
@@ -285,6 +399,10 @@ class AIActionPage(QtWidgets.QWidget):
             action.deleted.connect(self._action_delete)
             action.enabled_changed.connect(self._action_enabled_changed)
 
+    def coze_action_triggered(self):
+        cf = CozeForm(parent=self)
+        cf.exec_()
+
     def _action_enabled_changed(self, data):
         self.db.update_action(data)
 
@@ -296,7 +414,7 @@ class AIActionPage(QtWidgets.QWidget):
             return
 
         new_data = apf.info
-        new_data.update({'enabled': data['enabled'], 'type': data['type']})
+        new_data.update({'enabled': data['enabled']})
         if data['name'] == apf.info['name']:
             self.db.update_action(new_data)
         else:
@@ -321,7 +439,7 @@ class AIActionPage(QtWidgets.QWidget):
             return
 
         data = apf.info
-        data.update({'type': AIActionType.PRESET, 'enabled': True})
+        data.update({'enabled': True})
         self.db.add_action(data)
 
         action = self.ai_actions.add_action(data['name'], data['description'], data=data)

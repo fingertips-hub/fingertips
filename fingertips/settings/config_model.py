@@ -21,6 +21,10 @@ class Config(qfluentwidgets.QConfig):
     openai_current_model = qfluentwidgets.ConfigItem('openai', 'current_model', 'gpt-3.5-turbo')
     openai_temperature = qfluentwidgets.RangeConfigItem(
         'openai', 'temperature', 0.6, qfluentwidgets.RangeValidator(0, 2))
+
+    coze_user_id = qfluentwidgets.ConfigItem('coze', 'user_id', '')
+    coze_key = qfluentwidgets.ConfigItem('coze', 'key', '')
+
     update_on_start = qfluentwidgets.ConfigItem(
         'update', 'update_on_start', True, qfluentwidgets.BoolValidator())
 

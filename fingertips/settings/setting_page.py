@@ -292,6 +292,23 @@ class SettingPage(qfluentwidgets.ScrollArea):
             self.ai_group
         )
 
+        self.coze_group = qfluentwidgets.SettingCardGroup('Coze Bot 设置', self.scroll_widget)
+        self.coze_key_card = LineEditSettingCard(
+            FluentIcon.VPN,
+            'Coze API Key',
+            config_model.coze_key,
+            True,
+            '当您在AI功能中添加 Coze Bot 的时候，需要设置该值',
+            self.coze_group
+        )
+        self.coze_user_id_card = LineEditSettingCard(
+            FluentIcon.PEOPLE,
+            'Coze User ID',
+            config_model.coze_user_id,
+            content='标识当前与 Bot 交互的用户',
+            parent=self.coze_group
+        )
+
         self.update_group = qfluentwidgets.SettingCardGroup('软件更新', self.scroll_widget)
         self.update_on_start_up_card = qfluentwidgets.SwitchSettingCard(
             FluentIcon.UPDATE,
@@ -332,6 +349,9 @@ class SettingPage(qfluentwidgets.ScrollArea):
         self.ai_group.addSettingCard(self.default_model_card)
         self.ai_group.addSettingCard(self.default_temperature_card)
 
+        self.coze_group.addSettingCard(self.coze_key_card)
+        self.coze_group.addSettingCard(self.coze_user_id_card)
+
         self.update_group.addSettingCard(self.update_on_start_up_card)
 
         self.about_group.addSettingCard(self.help_card)
@@ -342,6 +362,7 @@ class SettingPage(qfluentwidgets.ScrollArea):
         self.expand_layout.setContentsMargins(10, 8, 20, 0)
         self.expand_layout.addWidget(self.shortcut_group)
         self.expand_layout.addWidget(self.ai_group)
+        self.expand_layout.addWidget(self.coze_group)
         self.expand_layout.addWidget(self.update_group)
         self.expand_layout.addWidget(self.about_group)
 
