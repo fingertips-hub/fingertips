@@ -33,13 +33,14 @@ class SettingsWindow(MSFluentWindow):
     def __init__(self):
         super().__init__()
         self.setWindowIcon(QtGui.QIcon('res/icon.png'))
-        self.setWindowTitle('Fingertips Settings')
+        # self.setWindowTitle('Fingertips Settings')
+        self.setWindowTitle('配置中心')
 
         # create sub interface
         self.setting_page = SettingPage(self)
         self.ai_action_page = AIActionPage(self)
         self.videoInterface = Widget('Video Interface', self)
-        self.libraryInterface = Widget('library Interface', self)
+        # self.libraryInterface = Widget('library Interface', self)
 
         self.initNavigation()
 
@@ -47,10 +48,10 @@ class SettingsWindow(MSFluentWindow):
         self.addSubInterface(self.setting_page, FIF.SETTING, '设置',
                              FIF.SETTING)
         self.addSubInterface(self.ai_action_page, FIF.APPLICATION, 'AI功能')
-        self.addSubInterface(self.videoInterface, FIF.VIDEO, '视频')
+        self.addSubInterface(self.videoInterface, FIF.EDUCATION, '工具')
 
-        self.addSubInterface(self.libraryInterface, FIF.BOOK_SHELF, '库',
-                             FIF.LIBRARY_FILL, NavigationItemPosition.BOTTOM)
+        # self.addSubInterface(self.libraryInterface, FIF.BOOK_SHELF, '库',
+        #                      FIF.LIBRARY_FILL, NavigationItemPosition.BOTTOM)
         self.navigationInterface.addItem(
             routeKey='Help',
             icon=FIF.HELP,

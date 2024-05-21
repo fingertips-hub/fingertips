@@ -59,6 +59,7 @@ if __name__ == '__main__':
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('fingertips')
 
     qfluentwidgets.setThemeColor('#AB62BA')
+    # qfluentwidgets.setThemeColor('#6651F0')
     tray = create_tray(app)
     tray.show()
 

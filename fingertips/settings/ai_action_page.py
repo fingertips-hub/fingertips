@@ -369,9 +369,13 @@ class AIActionPage(QtWidgets.QWidget):
         preset_action.triggered.connect(self.preset_action_triggered)
         self.button_menu.addAction(preset_action)
 
-        coze_action = qfluentwidgets.Action(FluentIcon.HEADPHONE, 'Coze Bot', self)
+        coze_action = qfluentwidgets.Action(FluentIcon.ROBOT, 'Coze Bot', self)
         coze_action.triggered.connect(self.coze_action_triggered)
         self.button_menu.addAction(coze_action)
+
+        dify_action = qfluentwidgets.Action(FluentIcon.ROBOT, 'Dify Bot', self)
+        dify_action.triggered.connect(self.dify_action_triggered)
+        self.button_menu.addAction(dify_action)
 
         self.add_button = qfluentwidgets.PrimaryDropDownPushButton(FluentIcon.ADD, '添加', self)
         self.add_button.setMenu(self.button_menu)
@@ -398,6 +402,9 @@ class AIActionPage(QtWidgets.QWidget):
             action.edited.connect(self._action_edit)
             action.deleted.connect(self._action_delete)
             action.enabled_changed.connect(self._action_enabled_changed)
+
+    def dify_action_triggered(self):
+        pass
 
     def coze_action_triggered(self):
         cf = CozeForm(parent=self)
