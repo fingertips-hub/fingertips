@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css" rel="stylesheet">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/atom-one-dark.min.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="w-full h-screen bg-slate-100 text-sm">
+    <div id="chat-container" class="w-full h-screen p-6 bg-slate-100 flex flex-col">
+      <template v-for="(item, index) in messages" :key="index">
+        <div class="w-full flex mb-3" :class="{'justify-end': item.role === 'user', 'justify-start': item.role !== 'user'}">
+          <div v-if="item.role === 'user'" class="flex items-start max-w-full max-w-[80%]">
+            <div class="inline-block bg-gray-50 p-4 rounded-lg text-left whitespace-normal break-words" v-html="item.content"></div>
+            <img
+              src="https://registry.npmmirror.com/@lobehub/assets-emoji/1.3.0/files/assets/grinning-face.webp"
+              alt="User Avatar"
+              class="w-8 h-8 rounded-full ml-2 object-cover"
+            />
+          </div>
+          <div v-else class="flex items-start max-w-full max-w-[80%]">
+            <img
+              src="https://registry.npmmirror.com/@lobehub/assets-emoji/1.3.0/files/assets/robot.webp"
+              alt="User Avatar"
+              class="w-8 h-8 rounded-full mr-2 object-cover"
+            />
+            <div class="inline-block bg-gray-50 p-4 rounded-lg text-left whitespace-normal break-words" v-html="item.content"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qwebchannel@6.2.0/qwebchannel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@12.3.2/dist/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+
+    <script type="module">
+      import { createApp, ref, onMounted } from 'https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.esm-browser.prod.js'
+
+      var md = window.markdownit({
+        highlight: function (str, lang) {
+          if (lang && hljs.getLanguage(lang)) {
+            try {
+              return (
+                '<pre class="py-2"><code class="hljs rounded-md">' +
+                hljs.highlight(str, { language: lang, ignoreIllegals: true })
+                  .value +
+                "</code></pre>"
+              );
+            } catch (__) {}
+          }
+
+          return (
+            '<pre class="py-2"><code class="hljs rounded-md">' +
+            md.utils.escapeHtml(str) +
+            "</code></pre>"
+          );
+        },
+      });
+
+      createApp({
+        setup() {
+          const messages = ref([])
+
+          onMounted(()=>{
+            new QWebChannel(qt.webChannelTransport, (channel) => {
+                window.Bridge = channel.objects.Bridge;
+
+                Bridge.add_chat_item.connect(text => {
+                  const data = JSON.parse(text)
+                  data.content = md.render(data.content)
+                  messages.value.push(data)
+                })
+
+                Bridge.set_ai_chat.connect(text => {
+                  messages.value[messages.value.length - 1]['content'] = md.render(text)
+                })
+            })
+          })
+          return {
+            messages,
+          }
+        }
+      }).mount('#chat-container')
+    </script>
+  </body>
+</html>

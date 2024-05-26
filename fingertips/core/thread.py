@@ -14,13 +14,14 @@ class AskAIThread(QtCore.QThread):
     finished = QtCore.Signal(str)
 
     def __init__(self, question, model='', temperature=None, max_tokens=0, system_prompt='',
-                 convert_markdown=True, parent=None):
+                 convert_markdown=True, histories=None, parent=None):
         super().__init__(parent)
         self.question = system_prompt.replace('{{TEXT}}', question) or question
         self.model = model or config_model.openai_current_model.value
         self.temperature = temperature or config_model.openai_temperature.value
         self.max_tokens = max_tokens or openai.NotGiven()
         self.convert_markdown = convert_markdown
+        self.histories = histories
 
         self.openai_client = openai.OpenAI(
             api_key=config_model.openai_key.value,
@@ -38,14 +39,18 @@ class AskAIThread(QtCore.QThread):
 
         log.info('starting ask ai....')
         try:
+            messages = [{
+                    'role': 'user',
+                    'content': self.question
+                }]
+            if self.histories:
+                messages = [*self.histories, *messages]
+
             response = self.openai_client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
-                messages=[{
-                    'role': 'user',
-                    'content': self.question
-                }],
+                messages=messages,
                 stream=True
             )
 
