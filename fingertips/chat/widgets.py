@@ -22,9 +22,12 @@ class BridgeObject(QtCore.QObject):
 
 
 class ChatHistoryWidget(FramelessWebEngineView):
+    chat_response_finished = QtCore.Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.histories = []
+        self.thread = None
 
         self.init_settings()
 
@@ -37,32 +40,45 @@ class ChatHistoryWidget(FramelessWebEngineView):
 
         QtCore.QTimer.singleShot(0, self.apply_rounded_corners)
 
-    def set_user_content(self, text):
-        message = {
-            'role': 'user',
-            'content': text.strip()
-        }
-        self.bridge_object.add_chat_item_content(message)
-        self.bridge_object.add_chat_item_content({
-            'role': 'ai',
-            'content': ''
-        })
+    def set_user_content(self, text='', use_histories=False):
+        if not use_histories:
+            message = {
+                'role': 'user',
+                'content': text.strip()
+            }
+            self.bridge_object.add_chat_item_content(message)
+            self.bridge_object.add_chat_item_content({
+                'role': 'assistant',
+                'content': ''
+            })
+        else:
+            message, _ = self.histories[-2:]
+            self.histories = self.histories[:-2]
+            # todo 当 use_histories=True, 处理 js侧的 message
 
         # todo 设置 model temperature 等
-        thread = AskAIThread(
-            text.strip(),
+        self.thread = AskAIThread(
+            message['content'],
             convert_markdown=False,
             histories=self.histories,
             parent=self
         )
-        thread.resulted.connect(lambda msg: self.bridge_object.set_ai_chat_content(msg))
-        thread.finished.connect(lambda msg: self.histories.append({
-            'role': 'ai',
-            'content': msg
-        }))
-        thread.start()
+
+        self.thread.resulted.connect(lambda msg: self.bridge_object.set_ai_chat_content(msg))
+        self.thread.finished.connect(self._thread_finished)
+        self.thread.start()
 
         self.histories.append(message)
+
+    def stop_thread(self):
+        self.thread.requestInterruption()
+
+    def _thread_finished(self, message):
+        self.histories.append({
+            'role': 'assistant',
+            'content': message
+        })
+        self.chat_response_finished.emit(message)
 
     def apply_rounded_corners(self):
         path = QtGui.QPainterPath()

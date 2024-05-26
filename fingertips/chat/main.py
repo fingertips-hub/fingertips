@@ -33,9 +33,11 @@ class ChatListCard(qfluentwidgets.CardWidget):
 class ChatContentCard(qfluentwidgets.CardWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.is_send = False
 
         self.chat_history_widget = ChatHistoryWidget(self)
-        self.chat_history_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.chat_history_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                               QtWidgets.QSizePolicy.Expanding)
         self.chat_history_widget.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
 
         self.setting_button = qfluentwidgets.ToolButton(FluentIcon.SETTING, self)
@@ -43,9 +45,16 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         self.model_combobox = qfluentwidgets.ComboBox()
         self.model_combobox.addItems(config_model.openai_models.value)
         self.model_combobox.setCurrentText(config_model.openai_current_model.value)
-        self.send_button = qfluentwidgets.PrimaryPushButton('发送', self)
 
-        self.input_text = qfluentwidgets.TextEdit(self)
+        self.resend_button = qfluentwidgets.ToolButton(FluentIcon.SYNC, self)
+        self.send_button = qfluentwidgets.PrimaryPushButton('发送', self)
+        self.send_button.setMinimumWidth(100)
+
+        self.input_text = qfluentwidgets.PlainTextEdit(self)
+        self.input_text.setPlaceholderText('按 Ctrl + Enter 发送')
+
+        input_shortcut = QtWidgets.QShortcut(QtGui.QKeySequence('ctrl+return'), self)
+        input_shortcut.activated.connect(self.send_button_clicked)
 
         button_layout = QtWidgets.QHBoxLayout()
         button_layout.addWidget(self.setting_button)
@@ -54,6 +63,7 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         button_layout.addSpacerItem(QtWidgets.QSpacerItem(
             10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
         ))
+        button_layout.addWidget(self.resend_button)
         button_layout.addWidget(self.send_button)
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -62,13 +72,35 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         layout.addWidget(self.input_text, 2)
 
         self.send_button.clicked.connect(self.send_button_clicked)
+        self.chat_history_widget.chat_response_finished.connect(self.chat_finished)
+        self.resend_button.clicked.connect(self.resend_button_clicked)
+
+    def resend_button_clicked(self):
+        if self.is_send:
+            return self.chat_history_widget.stop_thread()
+
+    def chat_finished(self):
+        self.input_text.setEnabled(True)
+        self.resend_button.setIcon(FluentIcon.SYNC)
+        self.is_send = False
 
     def resizeEvent(self, event):
         self.chat_history_widget.apply_rounded_corners()
 
     def send_button_clicked(self):
+        if self.is_send:
+            return
+
         text = self.input_text.toPlainText()
+        if not text:
+            return qfluentwidgets.InfoBar.error(
+                '错误', '请先输入要提问的内容', duration=1500, parent=self)
+
+        self.is_send = True
         self.chat_history_widget.set_user_content(text)
+        self.input_text.setEnabled(False)
+        self.input_text.setPlainText('')
+        self.resend_button.setIcon(FluentIcon.PAUSE)
 
 
 class ChatWindow(FramelessWindow):

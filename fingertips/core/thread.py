@@ -22,6 +22,7 @@ class AskAIThread(QtCore.QThread):
         self.max_tokens = max_tokens or openai.NotGiven()
         self.convert_markdown = convert_markdown
         self.histories = histories
+        self._stop = False
 
         self.openai_client = openai.OpenAI(
             api_key=config_model.openai_key.value,
@@ -57,19 +58,21 @@ class AskAIThread(QtCore.QThread):
             log.info('waiting response...')
             res_test = ''
             for chunk in response:
-                if not self.isInterruptionRequested():
-                    if not chunk.choices:
-                        continue
+                if self.isInterruptionRequested():
+                    return self.response_finished('')
 
-                    if chunk.choices[0].delta.content is not None:
-                        res_test += chunk.choices[0].delta.content
-                        if self.convert_markdown:
-                            data = self.generate_style(
-                                self.markdown_parser.convert(res_test)
-                            )
-                            self.resulted.emit(data)
-                        else:
-                            self.resulted.emit(res_test)
+                if not chunk.choices:
+                    continue
+
+                if chunk.choices[0].delta.content is not None:
+                    res_test += chunk.choices[0].delta.content
+                    if self.convert_markdown:
+                        data = self.generate_style(
+                            self.markdown_parser.convert(res_test)
+                        )
+                        self.resulted.emit(data)
+                    else:
+                        self.resulted.emit(res_test)
 
         except Exception as e:
             if self.convert_markdown:
@@ -81,7 +84,10 @@ class AskAIThread(QtCore.QThread):
                 res_test = f'请求错误：{str(e)}'
                 self.resulted.emit(res_test)
 
-        self.finished.emit(res_test.strip())
+        self.response_finished(res_test)
+
+    def response_finished(self, message):
+        self.finished.emit(message)
 
     def default_message(self):
         if self.convert_markdown:
