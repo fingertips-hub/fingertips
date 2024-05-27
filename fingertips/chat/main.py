@@ -75,12 +75,27 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         self.chat_history_widget.chat_response_finished.connect(self.chat_finished)
         self.resend_button.clicked.connect(self.resend_button_clicked)
 
+        self.installEventFilter(self)
+
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Return:
+            if not self.input_text.hasFocus():
+                self.input_text.setFocus()
+                return True
+        return super(ChatContentCard, self).eventFilter(source, event)
+
     def resend_button_clicked(self):
         if self.is_send:
             return self.chat_history_widget.stop_thread()
 
+        self.is_send = True
+        self.chat_history_widget.set_user_content(use_histories=True)
+        self.send_button.setEnabled(False)
+        self.input_text.setPlainText('')
+        self.resend_button.setIcon(FluentIcon.PAUSE)
+
     def chat_finished(self):
-        self.input_text.setEnabled(True)
+        self.send_button.setEnabled(True)
         self.resend_button.setIcon(FluentIcon.SYNC)
         self.is_send = False
 
@@ -98,7 +113,7 @@ class ChatContentCard(qfluentwidgets.CardWidget):
 
         self.is_send = True
         self.chat_history_widget.set_user_content(text)
-        self.input_text.setEnabled(False)
+        self.send_button.setEnabled(False)
         self.input_text.setPlainText('')
         self.resend_button.setIcon(FluentIcon.PAUSE)
 
@@ -110,7 +125,7 @@ class ChatWindow(FramelessWindow):
         self._init_ui()
 
     def _init_ui(self):
-        self.resize(1600, 900)
+        self.resize(1200, 900)
         self.setTitleBar(qfluentwidgets.FluentTitleBar(self))
         self.titleBar.raise_()
         self.setWindowTitle('Chat Window')
