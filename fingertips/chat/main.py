@@ -9,7 +9,8 @@ from qfluentwidgets import FluentIcon
 from qframelesswindow import FramelessWindow
 
 from fingertips.settings.config_model import config_model
-from fingertips.chat.widgets import ChatHistoryWidget
+from fingertips.chat.widgets import ChatHistoryWidget, ChatListWidget
+from fingertips.widget_utils import signal_bus
 
 
 def is_win11():
@@ -21,13 +22,18 @@ class ChatListCard(qfluentwidgets.CardWidget):
         super().__init__(parent)
 
         self.add_chat = qfluentwidgets.PrimaryPushButton('新的聊天', self)
-        self.chats_widget = qfluentwidgets.ListWidget()
+        self.chats_widget = ChatListWidget()
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setAlignment(QtCore.Qt.AlignTop)
 
         layout.addWidget(self.add_chat)
         layout.addWidget(self.chats_widget)
+
+        self.add_chat.clicked.connect(self.add_chat_clicked)
+
+    def add_chat_clicked(self):
+        self.chats_widget.add_item()
 
 
 class ChatContentCard(qfluentwidgets.CardWidget):
@@ -151,23 +157,28 @@ class ChatWindow(FramelessWindow):
         layout.setContentsMargins(6, 46, 6, 6)
         layout.addWidget(splitter)
 
+        signal_bus.chat_item_clicked.connect(self.chat_item_clicked)
+
+    def chat_item_clicked(self, item):
+        self.setWindowTitle(item.label.text())
+
 
 if __name__ == '__main__':
     import os
     from PySide2.QtWebEngineWidgets import QWebEngineView
     from PySide2 import QtGui
 
-    os.environ['QTWEBENGINE_REMOTE_DEBUGGING'] = '9999'
+    # os.environ['QTWEBENGINE_REMOTE_DEBUGGING'] = '9999'
     app = QtWidgets.QApplication([])
 
     cw = ChatWindow()
     cw.show()
 
-    # 打开调试页面
-    dw = QWebEngineView()
-    dw.setWindowTitle('开发人员工具')
-    dw.load(QtCore.QUrl('http://127.0.0.1:9999'))
-    dw.move(600, 100)
-    dw.show()
+    # # 打开调试页面
+    # dw = QWebEngineView()
+    # dw.setWindowTitle('开发人员工具')
+    # dw.load(QtCore.QUrl('http://127.0.0.1:9999'))
+    # dw.move(600, 100)
+    # dw.show()
 
     app.exec_()

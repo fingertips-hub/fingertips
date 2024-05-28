@@ -1,13 +1,19 @@
 import os
 import json
+from functools import partial
 
 from PySide2 import QtGui
 from PySide2 import QtCore
+from PySide2 import QtWidgets
 from PySide2.QtWebChannel import QWebChannel
 from PySide2.QtWebEngineWidgets import QWebEngineSettings
+
+import qfluentwidgets
+from qfluentwidgets import FluentIcon
 from qframelesswindow.webengine import FramelessWebEngineView
 
 from fingertips.core.thread import AskAIThread
+from fingertips.widget_utils import signal_bus
 
 
 class BridgeObject(QtCore.QObject):
@@ -100,3 +106,111 @@ class ChatHistoryWidget(FramelessWebEngineView):
         settings.setAttribute(QWebEngineSettings.WebGLEnabled, True)
         settings.setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled, True)
         settings.setAttribute(QWebEngineSettings.TouchIconsEnabled, True)
+
+
+class ChatItem(qfluentwidgets.CardWidget):
+    edited = QtCore.Signal()
+    deleted = QtCore.Signal()
+
+    def __init__(self, label, data=None, parent=None):
+        super().__init__(parent)
+        self.data = data
+
+        self.setObjectName('chat_item')
+
+        self.label = qfluentwidgets.BodyLabel(label)
+        self.data = data
+
+        self.more_button = qfluentwidgets.TransparentToolButton(FluentIcon.MORE, self)
+        self.more_button.setFixedSize(18, 18)
+        self.more_button.clicked.connect(self.more_button_clicked)
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.addWidget(self.label, 0, QtCore.Qt.AlignLeft)
+        layout.addSpacerItem(QtWidgets.QSpacerItem(
+            0, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+        ))
+        layout.addWidget(self.more_button, 0, QtCore.Qt.AlignRight)
+
+    def more_button_clicked(self):
+        menu = qfluentwidgets.RoundMenu(parent=self)
+        edit_action = qfluentwidgets.Action(FluentIcon.EDIT, '编辑', self)
+        edit_action.triggered.connect(partial(self.action_triggered, 'edit'))
+        menu.addAction(edit_action)
+
+        delete_action = qfluentwidgets.Action(FluentIcon.DELETE, '删除', self)
+        delete_action.triggered.connect(partial(self.action_triggered, 'delete'))
+        menu.addAction(delete_action)
+
+        x = (self.more_button.width() - menu.width()) // 2 + 10
+        pos = self.more_button.mapToGlobal(QtCore.QPoint(x, self.more_button.height()))
+        menu.exec(pos)
+
+    def set_active(self):
+        self.setStyleSheet('#chat_item {border-left: 4px solid #ffab62ba; border-radius: 6px}')
+
+    def clear_active(self):
+        self.setStyleSheet('#chat_item {{border-left: 0 solid transparent}')
+
+    def action_triggered(self, _type):
+        if _type == 'edit':
+            self.edited.emit()
+        else:
+            self.deleted.emit()
+
+
+class ChatListWidget(qfluentwidgets.ScrollArea):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.chat_items = []
+
+        self.setStyleSheet(
+            'QScrollArea {border: none; background:transparent}'
+        )
+
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setWidgetResizable(True)
+
+        self.scroll_widget = QtWidgets.QWidget()
+        self.main_layout = QtWidgets.QVBoxLayout(self.scroll_widget)
+        self.main_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.main_layout.setContentsMargins(2, 2, 3, 2)
+        self.setWidget(self.scroll_widget)
+
+    def add_item(self):
+        item = ChatItem('新聊天')
+        item.set_active()
+        item.clicked.connect(partial(self.item_clicked, item))
+        item.deleted.connect(partial(self.item_deleted, item))
+        item.edited.connect(partial(self.item_edited, item))
+
+        self.main_layout.insertWidget(0, item)
+
+        for i in self.chat_items:
+            i.clear_active()
+
+        self.chat_items.append(item)
+
+    def item_clicked(self, item):
+        for i in self.chat_items:
+            if i != item:
+                i.clear_active()
+            else:
+                i.set_active()
+
+        signal_bus.chat_item_clicked.emit(item)
+
+    def item_deleted(self, item):
+        label = item.label.text()
+        w = qfluentwidgets.Dialog('删除', f'你确定要删除聊天: {label} ？', self)
+        if w.exec():
+            self.chat_items.remove(item)
+            item.deleteLater()
+
+            return qfluentwidgets.InfoBar.success(
+                '提示', f'聊天: {label} 删除成功！', duration=1500,
+                parent=self.parent().parent().parent()
+            )
+
+    def item_edited(self, item):
+        pass
