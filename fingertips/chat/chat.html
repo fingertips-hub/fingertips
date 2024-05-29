@@ -107,6 +107,7 @@
                 Bridge.add_chat_item.connect(text => {
                   const data = JSON.parse(text)
                   data.content = md.render(data.content)
+                  // 数据带了 id 用于后续删除和修改
                   messages.value.push(data)
                 })
 

@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 from functools import partial
 
 from PySide2 import QtGui
@@ -50,17 +51,18 @@ class ChatHistoryWidget(FramelessWebEngineView):
         if not use_histories:
             message = {
                 'role': 'user',
-                'content': text.strip()
+                'content': text.strip(),
+                'id': str(uuid.uuid4())
             }
             self.bridge_object.add_chat_item_content(message)
             self.bridge_object.add_chat_item_content({
                 'role': 'assistant',
-                'content': ''
+                'content': '',
+                'id': str(uuid.uuid4())
             })
         else:
             message, _ = self.histories[-2:]
             self.histories = self.histories[:-2]
-            # todo 当 use_histories=True, 处理 js侧的 message
 
         # todo 设置 model temperature 等
         self.thread = AskAIThread(
