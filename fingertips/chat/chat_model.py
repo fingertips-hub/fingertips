@@ -1,7 +1,7 @@
 import uuid
-from PySide2 import QtCore
+import json
 
-from fingertips.db_utils import ChatDB
+from PySide2 import QtCore
 
 
 class ChatConfigItem(QtCore.QObject):
@@ -31,35 +31,53 @@ class ChatConfigRangeItem(ChatConfigItem):
         self.range = range_
 
 
+class ChatConfigListItem(ChatConfigItem):
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, v):
+        is_init = False
+        if isinstance(v, str):
+            v = json.loads(v)
+            is_init = True
+
+        self._value = v
+
+        if not is_init:
+            self.value_changed.emit(self.dict())
+
+    def dict(self):
+        return {self.key: json.dumps(self._value)}
+
+
 class ChatConfigModel(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self._db_client = None
         self._ignore_value_changed = False
 
-        self.id = ChatConfigItem('id', str(uuid.uuid4()))
+        self.cid = ChatConfigItem('cid', str(uuid.uuid4()))
         self.label = ChatConfigItem('label', '新聊天')
         self.temperature = ChatConfigRangeItem('temperature', 0.6, (0, 2))
         self.max_tokens = ChatConfigItem('max_tokens', 4096)
         self.history_count = ChatConfigItem('history_count', 4)
         self.system = ChatConfigItem('system', '')
         self.model = ChatConfigItem('model', 'gpt-4o')
-        self.histories = ChatConfigItem('histories', [])
+        self.histories = ChatConfigListItem('histories', [])
 
         self.load_fields()
 
     def load_fields(self):
-        self._items = {}
         for name in dir(self):
             item = getattr(self, name)
             if not isinstance(item, ChatConfigItem):
                 continue
 
             item.value_changed.connect(self._item_value_changed)
-            self._items.update(item.dict())
 
     def _item_value_changed(self, data):
-        self._items.update(data)
         # todo 保存到 db
         if not self._db_client:
             return
@@ -72,13 +90,27 @@ class ChatConfigModel(QtCore.QObject):
         self._ignore_value_changed = True
 
         for key, value in data.items():
+            if not hasattr(self, key):
+                continue
+
             item = getattr(self, key)
             item.value = value
 
         self._ignore_value_changed = False
 
     def dict(self):
-        return self._items
+        items = {}
+        for name in dir(self):
+            item = getattr(self, name)
+            if not isinstance(item, ChatConfigItem):
+                continue
+
+            items.update(item.dict())
+        return items
+
+    def save(self, db):
+        self._db_client = db
+        self._db_client.add_chat(self.dict())
 
 
 if __name__ == '__main__':

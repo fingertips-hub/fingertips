@@ -15,6 +15,8 @@ from qframelesswindow.webengine import FramelessWebEngineView
 
 from fingertips.core.thread import AskAIThread
 from fingertips.widget_utils import signal_bus
+from fingertips.db_utils import ChatDB
+from fingertips.chat.chat_model import ChatConfigModel
 
 
 class BridgeObject(QtCore.QObject):
@@ -114,14 +116,13 @@ class ChatItem(qfluentwidgets.CardWidget):
     edited = QtCore.Signal()
     deleted = QtCore.Signal()
 
-    def __init__(self, label, data=None, parent=None):
+    def __init__(self, chat_model: ChatConfigModel, parent=None):
         super().__init__(parent)
-        self.data = data
+        self.chat_model = chat_model
 
         self.setObjectName('chat_item')
 
-        self.label = qfluentwidgets.BodyLabel(label)
-        self.data = data
+        self.label = qfluentwidgets.BodyLabel(self.chat_model.label.value)
 
         self.more_button = qfluentwidgets.TransparentToolButton(FluentIcon.MORE, self)
         self.more_button.setFixedSize(18, 18)
@@ -165,6 +166,7 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.chat_items = []
+        self._chat_client = ChatDB()
 
         self.setStyleSheet(
             'QScrollArea {border: none; background:transparent}'
@@ -179,9 +181,22 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
         self.main_layout.setContentsMargins(2, 2, 3, 2)
         self.setWidget(self.scroll_widget)
 
-    def add_item(self):
-        item = ChatItem('新聊天')
-        item.set_active()
+        self.load_items()
+
+    def load_items(self):
+        for chat in self._chat_client.get_chats():
+            model = ChatConfigModel()
+            model.from_db(chat, self._chat_client)
+            self.add_item(model, False)
+
+    def add_item(self, chat_model=None, set_active=True):
+        if not chat_model:
+            chat_model = ChatConfigModel()
+            chat_model.save(self._chat_client)
+
+        item = ChatItem(chat_model)
+        if set_active:
+            item.set_active()
         item.clicked.connect(partial(self.item_clicked, item))
         item.deleted.connect(partial(self.item_deleted, item))
         item.edited.connect(partial(self.item_edited, item))
@@ -207,7 +222,11 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
         w = qfluentwidgets.Dialog('删除', f'你确定要删除聊天: {label} ？', self)
         if w.exec():
             self.chat_items.remove(item)
+            self._chat_client.delete_chat(item.chat_model.cid.value)
             item.deleteLater()
+
+            # todo 清空聊天标题
+            # todo 清理聊天框
 
             return qfluentwidgets.InfoBar.success(
                 '提示', f'聊天: {label} 删除成功！', duration=1500,

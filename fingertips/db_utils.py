@@ -64,3 +64,9 @@ class ChatDB(DBBase):
 
     def add_chat(self, chat):
         self.table.insert(chat)
+
+    def get_chats(self):
+        return self.table.all()
+
+    def delete_chat(self, cid):
+        self.table.delete(cid=cid)

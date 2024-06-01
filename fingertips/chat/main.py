@@ -48,6 +48,7 @@ class ChatContentCard(qfluentwidgets.CardWidget):
 
         self.setting_button = qfluentwidgets.ToolButton(FluentIcon.SETTING, self)
         self.upload_button = qfluentwidgets.ToolButton(FluentIcon.PHOTO, self)
+        self.cut_button = qfluentwidgets.ToolButton(FluentIcon.CLIPPING_TOOL, self)
         self.model_combobox = qfluentwidgets.ComboBox()
         self.model_combobox.addItems(config_model.openai_models.value)
         self.model_combobox.setCurrentText(config_model.openai_current_model.value)
@@ -65,6 +66,7 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         button_layout = QtWidgets.QHBoxLayout()
         button_layout.addWidget(self.setting_button)
         button_layout.addWidget(self.upload_button)
+        button_layout.addWidget(self.cut_button)
         button_layout.addWidget(self.model_combobox)
         button_layout.addSpacerItem(QtWidgets.QSpacerItem(
             10, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
