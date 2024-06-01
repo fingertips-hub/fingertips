@@ -55,3 +55,12 @@ class CozeActionDB(AIActionDB):
     def __init__(self):
         super().__init__()
         self.table = self._db['coze_actions']
+
+
+class ChatDB(DBBase):
+    def __init__(self):
+        super().__init__()
+        self.table = self._db['chats']
+
+    def add_chat(self, chat):
+        self.table.insert(chat)

@@ -1,6 +1,8 @@
 import uuid
 from PySide2 import QtCore
 
+from fingertips.db_utils import ChatDB
+
 
 class ChatConfigItem(QtCore.QObject):
     value_changed = QtCore.Signal(dict)
