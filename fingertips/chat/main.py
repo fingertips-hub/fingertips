@@ -1,4 +1,5 @@
 import sys
+from functools import partial
 
 from PySide2 import QtCore
 from PySide2 import QtGui
@@ -10,6 +11,7 @@ from qframelesswindow import FramelessWindow
 
 from fingertips.settings.config_model import config_model
 from fingertips.chat.widgets import ChatHistoryWidget, ChatListWidget
+from fingertips.chat.settings_widget import ChatSettingDialog
 from fingertips.widget_utils import signal_bus
 
 
@@ -37,16 +39,16 @@ class ChatListCard(qfluentwidgets.CardWidget):
 
 
 class ChatContentCard(qfluentwidgets.CardWidget):
-    def __init__(self, parent=None):
+    def __init__(self, chat_list_widget: ChatListWidget, parent=None):
         super().__init__(parent)
         self.is_send = False
+        self.chat_list_widget = chat_list_widget
 
         self.chat_history_widget = ChatHistoryWidget(self)
         self.chat_history_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
                                                QtWidgets.QSizePolicy.Expanding)
         self.chat_history_widget.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
 
-        self.setting_button = qfluentwidgets.ToolButton(FluentIcon.SETTING, self)
         self.upload_button = qfluentwidgets.ToolButton(FluentIcon.PHOTO, self)
         self.cut_button = qfluentwidgets.ToolButton(FluentIcon.CLIPPING_TOOL, self)
         self.model_combobox = qfluentwidgets.ComboBox()
@@ -64,7 +66,6 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         input_shortcut.activated.connect(self.send_button_clicked)
 
         button_layout = QtWidgets.QHBoxLayout()
-        button_layout.addWidget(self.setting_button)
         button_layout.addWidget(self.upload_button)
         button_layout.addWidget(self.cut_button)
         button_layout.addWidget(self.model_combobox)
@@ -82,8 +83,16 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         self.send_button.clicked.connect(self.send_button_clicked)
         self.chat_history_widget.chat_response_finished.connect(self.chat_finished)
         self.resend_button.clicked.connect(self.resend_button_clicked)
+        self.model_combobox.currentTextChanged.connect(self.model_combobox_changed)
 
         self.installEventFilter(self)
+
+    def model_combobox_changed(self):
+        if self.chat_list_widget.current_chat_item:
+            self.chat_list_widget.current_chat_item.chat_model.model.value = self.model_combobox.text()
+
+    def set_current_model(self, model):
+        self.model_combobox.setCurrentText(model)
 
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Return:
@@ -96,8 +105,15 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         if self.is_send:
             return self.chat_history_widget.stop_thread()
 
+        if not self.chat_list_widget.current_chat_item:
+            return qfluentwidgets.InfoBar.error(
+                '错误', '请先开始一个聊天', duration=3000,  parent=self)
+
         self.is_send = True
-        self.chat_history_widget.set_user_content(use_histories=True)
+        self.chat_history_widget.set_user_content(
+            chat_model=self.chat_list_widget.current_chat_item.chat_model,
+            use_histories=True
+        )
         self.send_button.setEnabled(False)
         self.input_text.setPlainText('')
         self.resend_button.setIcon(FluentIcon.PAUSE)
@@ -114,13 +130,18 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         if self.is_send:
             return
 
+        if not self.chat_list_widget.current_chat_item:
+            return qfluentwidgets.InfoBar.error(
+                '错误', '请先选择聊天或创建新的聊天', duration=2000, parent=self)
+
         text = self.input_text.toPlainText()
         if not text:
             return qfluentwidgets.InfoBar.error(
                 '错误', '请先输入要提问的内容', duration=1500, parent=self)
 
         self.is_send = True
-        self.chat_history_widget.set_user_content(text)
+        item = self.chat_list_widget.current_chat_item
+        self.chat_history_widget.set_user_content(text, item.chat_model)
         self.send_button.setEnabled(False)
         self.input_text.setPlainText('')
         self.resend_button.setIcon(FluentIcon.PAUSE)
@@ -136,10 +157,11 @@ class ChatWindow(FramelessWindow):
         self.resize(1200, 900)
         self.setTitleBar(qfluentwidgets.FluentTitleBar(self))
         self.titleBar.raise_()
-        self.setWindowTitle('Chat Window')
+        self.setWindowTitle('聊天窗口')
         self.setObjectName('LoginWindow')
 
         self.windowEffect.setMicaEffect(self.winId(), isDarkMode=qfluentwidgets.isDarkTheme())
+        qfluentwidgets.FluentStyleSheet.FLUENT_WINDOW.apply(self)
 
         if not is_win11():
             color = (QtGui.QColor(25, 33, 42)
@@ -148,7 +170,7 @@ class ChatWindow(FramelessWindow):
             self.setStyleSheet(f"#LoginWindow{{background: {color.name()}}}")
 
         self.chat_card = ChatListCard(self)
-        self.chat_content_card = ChatContentCard(self)
+        self.chat_content_card = ChatContentCard(self.chat_card.chats_widget, self)
 
         splitter = QtWidgets.QSplitter(QtGui.Qt.Horizontal)
         splitter.addWidget(self.chat_card)
@@ -159,10 +181,25 @@ class ChatWindow(FramelessWindow):
         layout.setContentsMargins(6, 46, 6, 6)
         layout.addWidget(splitter)
 
-        signal_bus.chat_item_clicked.connect(self.chat_item_clicked)
+        signal_bus.chat_item_edited.connect(self.chat_item_edited)
+        signal_bus.chat_item_clicked.connect(self._change_item)
 
-    def chat_item_clicked(self, item):
+        if self.chat_card.chats_widget.current_chat_item:
+            self._change_item(self.chat_card.chats_widget.current_chat_item)
+
+    def chat_item_edited(self, item):
+        cssa = ChatSettingDialog(item.chat_model, self.parent())
+        cssa.closed.connect(partial(self.chat_item_edit_close, item))
+        cssa.show()
+
+    def chat_item_edit_close(self, item):
+        item.reset_title()
+        if self.chat_card.chats_widget.current_chat_item == item:
+            self._change_item(item)
+
+    def _change_item(self, item):
         self.setWindowTitle(item.label.text())
+        self.chat_content_card.set_current_model(item.chat_model.model.value)
 
 
 if __name__ == '__main__':

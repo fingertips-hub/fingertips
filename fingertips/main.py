@@ -10,6 +10,7 @@ import qfluentwidgets
 from fingertips.utils import get_logger
 from fingertips.window import Fingertips
 from fingertips.settings.main import SettingsWindow
+from fingertips.chat.main import ChatWindow
 
 
 log = get_logger('tray')
@@ -17,7 +18,8 @@ log = get_logger('tray')
 
 def add_action(menu, name, connect_func, parent, icon=None):
     if icon:
-        icon = qtawesome.icon(icon)
+        if not isinstance(icon, QtGui.QIcon):
+            icon = qtawesome.icon(icon)
         action = qfluentwidgets.Action(icon, name, parent)
     else:
         action = qfluentwidgets.Action(name, parent)
@@ -35,8 +37,10 @@ def create_tray(app):
     tray.setContextMenu(menu)
 
     settings_window = SettingsWindow()
+    chat_window = ChatWindow()
 
     add_action(menu, '主窗口', lambda: window.set_visible(), app, 'ri.window-line')
+    add_action(menu, '聊天窗口', chat_window.show, app, qfluentwidgets.FluentIcon.CHAT.icon())
     add_action(menu, '系统配置', settings_window.show, app, 'fa.gear')
     add_action(menu, '退出', app.exit, app, 'mdi.power-standby')
 

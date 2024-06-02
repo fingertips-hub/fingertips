@@ -17,6 +17,7 @@ from fingertips.core.thread import AskAIThread
 from fingertips.widget_utils import signal_bus
 from fingertips.db_utils import ChatDB
 from fingertips.chat.chat_model import ChatConfigModel
+from fingertips.utils import ROOT_PATH
 
 
 class BridgeObject(QtCore.QObject):
@@ -45,11 +46,11 @@ class ChatHistoryWidget(FramelessWebEngineView):
 
         self.channel.registerObject('Bridge', self.bridge_object)
         self.page().setWebChannel(self.channel)
-        self.load(QtCore.QUrl.fromLocalFile(os.path.abspath('chat.html')))
+        self.load(QtCore.QUrl.fromLocalFile('{}/chat/chat.html'.format(ROOT_PATH)))
 
         QtCore.QTimer.singleShot(0, self.apply_rounded_corners)
 
-    def set_user_content(self, text='', use_histories=False):
+    def set_user_content(self, text='', chat_model=None, use_histories=False):
         if not use_histories:
             message = {
                 'role': 'user',
@@ -66,9 +67,12 @@ class ChatHistoryWidget(FramelessWebEngineView):
             message, _ = self.histories[-2:]
             self.histories = self.histories[:-2]
 
-        # todo 设置 model temperature 等
         self.thread = AskAIThread(
             message['content'],
+            model=chat_model.model.value,
+            temperature=chat_model.temperature.value,
+            max_tokens=chat_model.max_tokens.value,
+            system_prompt=chat_model.system.value,
             convert_markdown=False,
             histories=self.histories,
             parent=self
@@ -161,12 +165,16 @@ class ChatItem(qfluentwidgets.CardWidget):
         else:
             self.deleted.emit()
 
+    def reset_title(self):
+        self.label.setText(self.chat_model.label.value)
+
 
 class ChatListWidget(qfluentwidgets.ScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.chat_items = []
         self._chat_client = ChatDB()
+        self.current_chat_item = None
 
         self.setStyleSheet(
             'QScrollArea {border: none; background:transparent}'
@@ -184,10 +192,16 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
         self.load_items()
 
     def load_items(self):
+        item = None
         for chat in self._chat_client.get_chats():
             model = ChatConfigModel()
             model.from_db(chat, self._chat_client)
-            self.add_item(model, False)
+            item = self.add_item(model, False)
+
+        if item:
+            item.set_active()
+            self.current_chat_item = item
+            signal_bus.chat_item_clicked.emit(item)
 
     def add_item(self, chat_model=None, set_active=True):
         if not chat_model:
@@ -197,6 +211,8 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
         item = ChatItem(chat_model)
         if set_active:
             item.set_active()
+            self.current_chat_item = item
+
         item.clicked.connect(partial(self.item_clicked, item))
         item.deleted.connect(partial(self.item_deleted, item))
         item.edited.connect(partial(self.item_edited, item))
@@ -207,6 +223,7 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
             i.clear_active()
 
         self.chat_items.append(item)
+        return item
 
     def item_clicked(self, item):
         for i in self.chat_items:
@@ -215,6 +232,7 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
             else:
                 i.set_active()
 
+        self.current_chat_item = item
         signal_bus.chat_item_clicked.emit(item)
 
     def item_deleted(self, item):
@@ -234,4 +252,4 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
             )
 
     def item_edited(self, item):
-        pass
+        signal_bus.chat_item_edited.emit(item)

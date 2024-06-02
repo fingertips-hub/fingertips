@@ -70,3 +70,6 @@ class ChatDB(DBBase):
 
     def delete_chat(self, cid):
         self.table.delete(cid=cid)
+
+    def update_chat(self, chat):
+        self.table.update(chat, ['cid'])

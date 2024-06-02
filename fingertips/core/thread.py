@@ -1,3 +1,5 @@
+import copy
+
 import openai
 import markdown2
 from PySide2 import QtCore
@@ -21,6 +23,8 @@ class AskAIThread(QtCore.QThread):
         self.temperature = temperature or config_model.openai_temperature.value
         self.max_tokens = max_tokens or openai.NotGiven()
         self.convert_markdown = convert_markdown
+        if histories is not None:
+            histories = copy.deepcopy(histories)
         self.histories = histories
         self._stop = False
 
@@ -37,6 +41,7 @@ class AskAIThread(QtCore.QThread):
 
     def run(self):
         self.resulted.emit(self.default_message())
+        log.info('model: %s temperature: %s max_tokens: %s' % (self.model, self.temperature, self.max_tokens))
 
         log.info('starting ask ai....')
         try:
@@ -45,8 +50,10 @@ class AskAIThread(QtCore.QThread):
                     'content': self.question
                 }]
             if self.histories:
+                print(self.histories)
                 messages = [*self.histories, *messages]
 
+            log.info(messages)
             response = self.openai_client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
@@ -75,6 +82,9 @@ class AskAIThread(QtCore.QThread):
                         self.resulted.emit(res_test)
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
+
             if self.convert_markdown:
                 res_test = f'请求错误：```{str(e)}```'
                 self.resulted.emit(

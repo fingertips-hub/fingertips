@@ -10,6 +10,8 @@ import win32com.client
 
 from fingertips.config import RECORD_LOG, DEBUG
 
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
+
 
 class SingleLogger(object):
     log_path = './log/Fingertips.log'
