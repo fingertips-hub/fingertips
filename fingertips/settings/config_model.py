@@ -11,6 +11,7 @@ class UrlValidator(qfluentwidgets.ConfigValidator):
 
 class Config(qfluentwidgets.QConfig):
     main_window_shortcut = qfluentwidgets.ConfigItem('shortcut', 'main_window', 'ctrl+`')
+    chat_window_shortcut = qfluentwidgets.ConfigItem('shortcut', 'chat_window', 'F10')
     action_menu_shortcut = qfluentwidgets.ConfigItem('shortcut', 'action_menu', 'F8')
     ai_resend_shortcut = qfluentwidgets.ConfigItem('shortcut', 'ai_resend_shortcut', 'F7')
 
@@ -24,6 +25,8 @@ class Config(qfluentwidgets.QConfig):
 
     coze_user_id = qfluentwidgets.ConfigItem('coze', 'user_id', '')
     coze_key = qfluentwidgets.ConfigItem('coze', 'key', '')
+
+    chat_pin = qfluentwidgets.ConfigItem('chat', 'pin', True)
 
     update_on_start = qfluentwidgets.ConfigItem(
         'update', 'update_on_start', True, qfluentwidgets.BoolValidator())

@@ -21,6 +21,7 @@ from fingertips.utils import ROOT_PATH
 
 
 class BridgeObject(QtCore.QObject):
+    clear_chat = QtCore.Signal()
     add_chat_item = QtCore.Signal(str)
     set_ai_chat = QtCore.Signal(str)
 
@@ -29,6 +30,9 @@ class BridgeObject(QtCore.QObject):
 
     def add_chat_item_content(self, chat_item):
         self.add_chat_item.emit(json.dumps(chat_item))
+
+    def clear_chat_histories(self):
+        self.clear_chat.emit()
 
 
 class ChatHistoryWidget(FramelessWebEngineView):
@@ -50,6 +54,14 @@ class ChatHistoryWidget(FramelessWebEngineView):
 
         QtCore.QTimer.singleShot(0, self.apply_rounded_corners)
 
+    def init_content(self, histories):
+        self.bridge_object.clear_chat_histories()
+
+        for message in histories:
+            self.bridge_object.add_chat_item_content(message)
+
+        self.histories = histories
+
     def set_user_content(self, text='', chat_model=None, use_histories=False):
         if not use_histories:
             message = {
@@ -58,13 +70,17 @@ class ChatHistoryWidget(FramelessWebEngineView):
                 'id': str(uuid.uuid4())
             }
             self.bridge_object.add_chat_item_content(message)
+
+            ai_id = str(uuid.uuid4())
             self.bridge_object.add_chat_item_content({
                 'role': 'assistant',
                 'content': '',
-                'id': str(uuid.uuid4())
+                'id': ai_id
             })
         else:
             message, _ = self.histories[-2:]
+            ai_id = message['id']
+
             self.histories = self.histories[:-2]
 
         self.thread = AskAIThread(
@@ -79,19 +95,24 @@ class ChatHistoryWidget(FramelessWebEngineView):
         )
 
         self.thread.resulted.connect(lambda msg: self.bridge_object.set_ai_chat_content(msg))
-        self.thread.finished.connect(self._thread_finished)
+        self.thread.finished.connect(partial(self._thread_finished, ai_id, chat_model))
         self.thread.start()
 
         self.histories.append(message)
+        chat_model.histories.value = self.histories
 
     def stop_thread(self):
         self.thread.requestInterruption()
 
-    def _thread_finished(self, message):
-        self.histories.append({
+    def _thread_finished(self, ai_id, chat_model, message):
+        data = {
             'role': 'assistant',
-            'content': message
-        })
+            'content': message,
+            'id': ai_id
+        }
+        self.histories.append(data)
+        chat_model.histories.value = self.histories
+
         self.chat_response_finished.emit(message)
 
     def apply_rounded_corners(self):

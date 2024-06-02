@@ -16,11 +16,12 @@ log = get_logger('Fingertips')
 
 
 class Fingertips(QtWidgets.QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, chat_window, parent=None):
         super().__init__(parent=parent)
         self.placeholder = 'Hello, Fingertips!'
         self.RESULT_ITEM_HEIGHT = 62
         self.ai_view = None
+        self.chat_window = chat_window
 
         self.init_ui()
 
@@ -129,6 +130,7 @@ class Fingertips(QtWidgets.QWidget):
     def init_hotkey(self):
         global_shortcuts = {
             config_model.main_window_shortcut.value: '',
+            config_model.chat_window_shortcut.value: 'show_chat',
             config_model.action_menu_shortcut.value: 'show_menus',
             config_model.ai_resend_shortcut.value: 'ai_resend',
         }
@@ -163,11 +165,15 @@ class Fingertips(QtWidgets.QWidget):
 
         global_shortcuts = {
             config_model.main_window_shortcut.value: '',
+            config_model.chat_window_shortcut.value: 'show_chat',
             config_model.action_menu_shortcut.value: 'show_menus',
             config_model.ai_resend_shortcut.value: 'ai_resend'
         }
         if plugin_name in global_shortcuts.values():
             getattr(self, plugin_name)()
+
+    def show_chat(self):
+        self.chat_window.show()
 
     def show_menus(self):
         data = get_select_entity()

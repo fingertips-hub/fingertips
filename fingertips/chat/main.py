@@ -1,4 +1,5 @@
 import sys
+import time
 from functools import partial
 
 from PySide2 import QtCore
@@ -8,6 +9,7 @@ from PySide2 import QtWidgets
 import qfluentwidgets
 from qfluentwidgets import FluentIcon
 from qframelesswindow import FramelessWindow
+from qfluentwidgets import FluentTitleBar as _FluentTitleBar
 
 from fingertips.settings.config_model import config_model
 from fingertips.chat.widgets import ChatHistoryWidget, ChatListWidget
@@ -42,6 +44,8 @@ class ChatContentCard(qfluentwidgets.CardWidget):
     def __init__(self, chat_list_widget: ChatListWidget, parent=None):
         super().__init__(parent)
         self.is_send = False
+        self.init_histories = []
+        self.page_loaded = False
         self.chat_list_widget = chat_list_widget
 
         self.chat_history_widget = ChatHistoryWidget(self)
@@ -87,6 +91,9 @@ class ChatContentCard(qfluentwidgets.CardWidget):
 
         self.installEventFilter(self)
 
+    def init_content(self, histories):
+        self.chat_history_widget.init_content(histories)
+
     def model_combobox_changed(self):
         if self.chat_list_widget.current_chat_item:
             self.chat_list_widget.current_chat_item.chat_model.model.value = self.model_combobox.text()
@@ -107,7 +114,7 @@ class ChatContentCard(qfluentwidgets.CardWidget):
 
         if not self.chat_list_widget.current_chat_item:
             return qfluentwidgets.InfoBar.error(
-                '错误', '请先开始一个聊天', duration=3000,  parent=self)
+                '错误', '请先开始一个聊天', duration=3000, parent=self)
 
         self.is_send = True
         self.chat_history_widget.set_user_content(
@@ -147,6 +154,15 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         self.resend_button.setIcon(FluentIcon.PAUSE)
 
 
+class FluentTitleBar(_FluentTitleBar):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.pin_button = qfluentwidgets.TransparentToggleToolButton(FluentIcon.PIN, self)
+        self.pin_button.setChecked(config_model.chat_pin.value)
+        self.buttonLayout.insertWidget(0, self.pin_button)
+
+
 class ChatWindow(FramelessWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -155,7 +171,7 @@ class ChatWindow(FramelessWindow):
 
     def _init_ui(self):
         self.resize(1200, 900)
-        self.setTitleBar(qfluentwidgets.FluentTitleBar(self))
+        self.setTitleBar(FluentTitleBar(self))
         self.titleBar.raise_()
         self.setWindowTitle('聊天窗口')
         self.setObjectName('LoginWindow')
@@ -183,9 +199,22 @@ class ChatWindow(FramelessWindow):
 
         signal_bus.chat_item_edited.connect(self.chat_item_edited)
         signal_bus.chat_item_clicked.connect(self._change_item)
+        self.titleBar.pin_button.clicked.connect(self.toggle_topmost)
 
-        if self.chat_card.chats_widget.current_chat_item:
-            self._change_item(self.chat_card.chats_widget.current_chat_item)
+        self.is_init = True
+        self.toggle_topmost(config_model.chat_pin.value)
+
+    def toggle_topmost(self, topmost):
+        if not topmost:
+            self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
+        else:
+            self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+
+        qfluentwidgets.qconfig.set(config_model.chat_pin, topmost)
+        if not self.is_init:
+            return self.show()
+
+        self.is_init = False
 
     def chat_item_edited(self, item):
         cssa = ChatSettingDialog(item.chat_model, self.parent())
@@ -200,6 +229,20 @@ class ChatWindow(FramelessWindow):
     def _change_item(self, item):
         self.setWindowTitle(item.label.text())
         self.chat_content_card.set_current_model(item.chat_model.model.value)
+        self.chat_content_card.init_content(item.chat_model.histories.value)
+
+    def set_position(self):
+        pos = QtWidgets.QDesktopWidget().availableGeometry().center()
+        pos.setX(pos.x() - (self.width() / 2))
+        pos.setY(pos.y() - (pos.y() - 80))
+        self.move(pos)
+
+    def show(self):
+        if self.chat_card.chats_widget.current_chat_item:
+            self._change_item(self.chat_card.chats_widget.current_chat_item)
+
+        self.set_position()
+        return super().show()
 
 
 if __name__ == '__main__':

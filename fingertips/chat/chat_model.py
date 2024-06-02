@@ -51,7 +51,7 @@ class ChatConfigListItem(ChatConfigItem):
             self.value_changed.emit(self.dict())
 
     def dict(self):
-        return {self.key: json.dumps(self._value)}
+        return {self.key: json.dumps(self._value, ensure_ascii=False)}
 
 
 class ChatConfigModel(QtCore.QObject):

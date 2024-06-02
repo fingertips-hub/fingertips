@@ -114,6 +114,10 @@
                 Bridge.set_ai_chat.connect(text => {
                   messages.value[messages.value.length - 1]['content'] = md.render(text)
                 })
+
+                Bridge.clear_chat.connect(() => {
+                  messages.value = []
+                })
             })
           })
           return {

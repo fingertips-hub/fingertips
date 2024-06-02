@@ -205,6 +205,14 @@ class SettingPage(qfluentwidgets.ScrollArea):
             parent=self.shortcut_group
         )
 
+        self.chat_window_card = LineEditSettingCard(
+            FluentIcon.CHAT,
+            '聊天窗口快捷键',
+            config_model.chat_window_shortcut,
+            content='呼出聊天窗口的快捷键',
+            parent=self.shortcut_group
+        )
+
         self.menu_window_card = LineEditSettingCard(
             FluentIcon.MENU,
             '快捷菜单快捷键',
@@ -303,6 +311,7 @@ class SettingPage(qfluentwidgets.ScrollArea):
         )
 
         self.shortcut_group.addSettingCard(self.main_window_card)
+        self.shortcut_group.addSettingCard(self.chat_window_card)
         self.shortcut_group.addSettingCard(self.menu_window_card)
         self.shortcut_group.addSettingCard(self.ai_convenient_mode_card)
 

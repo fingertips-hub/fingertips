@@ -31,13 +31,14 @@ def add_action(menu, name, connect_func, parent, icon=None):
 def create_tray(app):
     tray = QtWidgets.QSystemTrayIcon()
     tray.setIcon(QtGui.QIcon('res/icon.png'))
-    window = Fingertips()
+
+    chat_window = ChatWindow()
+    window = Fingertips(chat_window)
 
     menu = qfluentwidgets.SystemTrayMenu()
     tray.setContextMenu(menu)
 
     settings_window = SettingsWindow()
-    chat_window = ChatWindow()
 
     add_action(menu, '主窗口', lambda: window.set_visible(), app, 'ri.window-line')
     add_action(menu, '聊天窗口', chat_window.show, app, qfluentwidgets.FluentIcon.CHAT.icon())
