@@ -88,6 +88,8 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         self.chat_history_widget.chat_response_finished.connect(self.chat_finished)
         self.resend_button.clicked.connect(self.resend_button_clicked)
         self.model_combobox.currentTextChanged.connect(self.model_combobox_changed)
+        signal_bus.chat_item_deleted.connect(
+            self.chat_history_widget.bridge_object.clear_chat_histories)
 
         self.installEventFilter(self)
 

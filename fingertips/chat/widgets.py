@@ -262,10 +262,12 @@ class ChatListWidget(qfluentwidgets.ScrollArea):
         if w.exec():
             self.chat_items.remove(item)
             self._chat_client.delete_chat(item.chat_model.cid.value)
-            item.deleteLater()
 
-            # todo 清空聊天标题
-            # todo 清理聊天框
+            if self.current_chat_item == item:
+                self.current_chat_item = None
+
+            signal_bus.chat_item_deleted.emit()
+            item.deleteLater()
 
             return qfluentwidgets.InfoBar.success(
                 '提示', f'聊天: {label} 删除成功！', duration=1500,

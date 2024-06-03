@@ -30,14 +30,39 @@
       ::-webkit-scrollbar-thumb:hover {
           background: #cccccc; /* 悬停时滑块的背景色 */
       }
-    </style>
 
+      .button-group {
+        display: none;
+        position: absolute;
+        top: -30px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 5px;
+        padding: 5px;
+      }
+
+      .message-container:hover .button-group {
+        display: flex;
+      }
+    </style>
   </head>
   <body class="w-full h-screen bg-slate-100 text-sm">
     <div id="app" class="w-full h-screen bg-slate-100 flex flex-col">
-      <div id="chat-container" class="flex-1 overflow-auto p-5" style="overflow-x: hidden">
+      <div id="chat-container" class="flex-1 overflow-auto p-5 relative" style="overflow-x: hidden">
         <template v-for="(item, index) in messages" :key="index">
-          <div class="w-full flex mb-4" :class="{'justify-end': item.role === 'user', 'justify-start': item.role !== 'user'}">
+          <div
+            class="w-full flex mb-4 message-container relative"
+            :class="{'justify-end': item.role === 'user', 'justify-start': item.role !== 'user'}"
+            @mouseenter="hoveredIndex = index"
+            @mouseleave="hoveredIndex = null"
+          >
+            <div
+              class="button-group"
+              v-show="hoveredIndex === index"
+              :class="{'right-10': item.role === 'user', 'left-10': item.role !== 'user'}"
+            >
+              <button @click="copyContent(item.content)" class="bg-blue-500 text-white px-2 py-1 rounded">复制</button>
+              <!-- 你可以在这里添加更多按钮 -->
+            </div>
             <div v-if="item.role === 'user'" class="flex items-start max-w-full max-w-[80%]">
               <div class="inline-block bg-gray-50 p-4 rounded-lg text-left whitespace-normal break-words" v-html="item.content"></div>
               <img
@@ -90,12 +115,23 @@
       createApp({
         setup() {
           const messages = ref([])
+          const hoveredIndex = ref(null)
 
           const scrollToBottom = () => {
             nextTick(() => {
               const container = document.getElementById('chat-container')
               container.scrollTop = container.scrollHeight
             })
+          }
+
+          const copyContent = (content) => {
+            const tempInput = document.createElement('textarea')
+            tempInput.value = content
+            document.body.appendChild(tempInput)
+            tempInput.select()
+            document.execCommand('copy')
+            document.body.removeChild(tempInput)
+            alert('内容已复制')
           }
 
           watch(messages, scrollToBottom, { deep: true })
@@ -120,8 +156,11 @@
                 })
             })
           })
+
           return {
             messages,
+            hoveredIndex,
+            copyContent
           }
         }
       }).mount('#app')
