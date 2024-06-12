@@ -40,6 +40,57 @@ class ChatListCard(qfluentwidgets.CardWidget):
         self.chats_widget.add_item()
 
 
+class PictureWidget(QtWidgets.QWidget):
+    def __init__(self, background_image_path, parent=None):
+        super(PictureWidget, self).__init__(parent)
+        self.background_image_path = background_image_path
+        self.setFixedSize(100, 100)
+
+        # 创建删除按钮
+        self.delete_button = QtWidgets.QPushButton('X', self)
+        self.delete_button.setFixedSize(20, 20)
+        self.delete_button.clicked.connect(self.delete_self)
+
+        # 设置布局
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(
+            self.delete_button,
+            alignment=QtCore.Qt.AlignRight | QtCore.Qt.AlignTop
+        )
+        layout.setContentsMargins(0, 0, 0, 0)
+
+    def delete_self(self):
+        self.setParent(None)  # 从父组件中移除自己
+        self.deleteLater()  # 销毁自己
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        pixmap = QtGui.QPixmap(self.background_image_path)
+        painter.drawPixmap(self.rect(), pixmap)
+        super(PictureWidget, self).paintEvent(event)
+
+
+class PictureGallery(qfluentwidgets.SingleDirectionScrollArea):
+    def __init__(self, parent):
+        super().__init__(parent, QtCore.Qt.Horizontal)
+        self.setFixedSize(500, 100)
+        self.setStyleSheet('border: 0px solid transparent;')
+
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setViewportMargins(10, 10, 10, 10)
+        self.setWidgetResizable(True)
+
+        self.scroll_widget = QtWidgets.QWidget()
+        self.scroll_widget.setFixedSize(500, 100)
+        self.expand_layout = qfluentwidgets.ExpandLayout(self.scroll_widget)
+        self.expand_layout.setContentsMargins(0, 0, 0, 0)
+        self.setWidget(self.scroll_widget)
+
+    def add_picture(self, file_path):
+        picture_widget = PictureWidget(file_path, self)
+        self.expand_layout.addWidget(picture_widget)
+
+
 class ChatContentCard(qfluentwidgets.CardWidget):
     def __init__(self, chat_list_widget: ChatListWidget, parent=None):
         super().__init__(parent)
@@ -53,7 +104,8 @@ class ChatContentCard(qfluentwidgets.CardWidget):
                                                QtWidgets.QSizePolicy.Expanding)
         self.chat_history_widget.setAttribute(QtCore.Qt.WA_OpaquePaintEvent)
 
-        self.upload_button = qfluentwidgets.ToolButton(FluentIcon.PHOTO, self)
+        self.images_button = qfluentwidgets.ToolButton(FluentIcon.PHOTO, self)
+        self.upload_button = qfluentwidgets.ToolButton(FluentIcon.UP, self)
         self.cut_button = qfluentwidgets.ToolButton(FluentIcon.CLIPPING_TOOL, self)
         self.model_combobox = qfluentwidgets.ComboBox()
         self.model_combobox.addItems(config_model.openai_models.value)
@@ -70,6 +122,7 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         input_shortcut.activated.connect(self.send_button_clicked)
 
         button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addWidget(self.images_button)
         button_layout.addWidget(self.upload_button)
         button_layout.addWidget(self.cut_button)
         button_layout.addWidget(self.model_combobox)
@@ -90,8 +143,27 @@ class ChatContentCard(qfluentwidgets.CardWidget):
         self.model_combobox.currentTextChanged.connect(self.model_combobox_changed)
         signal_bus.chat_item_deleted.connect(
             self.chat_history_widget.bridge_object.clear_chat_histories)
+        self.images_button.clicked.connect(self.images_button_clicked)
 
         self.installEventFilter(self)
+
+    def images_button_clicked(self):
+        menu = qfluentwidgets.RoundMenu(self)
+        pg = PictureGallery(menu)
+        # fixme 测试用
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        pg.add_picture("C:/Users/xhwz2/Desktop/微信图片_20240515212645.jpg")
+        menu.addWidget(pg, selectable=False)
+
+        menu.exec(self.images_button.mapToGlobal(
+            QtCore.QPoint(self.images_button.width() - 70, self.images_button.height() - 150)))
 
     def init_content(self, histories):
         self.chat_history_widget.init_content(histories)
@@ -234,7 +306,7 @@ class ChatWindow(FramelessWindow):
         self.chat_content_card.init_content(item.chat_model.histories.value)
 
     def set_position(self):
-        pos = QtWidgets.QDesktopWidget().availableGeometry().center()
+        pos = QtWidgets.QApplication.primaryScreen().availableGeometry().center()
         pos.setX(pos.x() - (self.width() / 2))
         pos.setY(pos.y() - (pos.y() - 80))
         self.move(pos)
