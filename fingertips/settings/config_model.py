@@ -28,6 +28,19 @@ class Config(qfluentwidgets.QConfig):
 
     chat_pin = qfluentwidgets.ConfigItem('chat', 'pin', True)
 
+    enable_super_sidebar = qfluentwidgets.ConfigItem(
+        'super_sidebar', 'enable', False, qfluentwidgets.BoolValidator())
+    super_sidebar_type = qfluentwidgets.OptionsConfigItem(
+      'super_sidebar', 'type', 'acrylic', qfluentwidgets.OptionsValidator(['acrylic', 'translucent']))
+    super_sidebar_opacity = qfluentwidgets.RangeConfigItem(
+        'super_sidebar', 'opacity', 0.6, qfluentwidgets.RangeValidator(0, 1))
+    super_sidebar_width = qfluentwidgets.RangeConfigItem(
+       'super_sidebar', 'width', 500, qfluentwidgets.RangeValidator(400, 800))
+    super_sidebar_position = qfluentwidgets.OptionsConfigItem(
+       'super_sidebar', 'position', 'right', qfluentwidgets.OptionsValidator(['left', 'right']))
+    super_sidebar_plugin_path = qfluentwidgets.ConfigItem(
+      'super_sidebar', 'plugin_path', f'{CONFIG_ROOT}/plugins'.replace('\\', '/'))
+
     update_on_start = qfluentwidgets.ConfigItem(
         'update', 'update_on_start', True, qfluentwidgets.BoolValidator())
 

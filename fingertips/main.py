@@ -1,5 +1,6 @@
 import sys
 import ctypes
+from functools import partial
 
 from PySide2 import QtWidgets
 from PySide2 import QtGui
@@ -11,6 +12,9 @@ from fingertips.utils import get_logger
 from fingertips.window import Fingertips
 from fingertips.settings.main import SettingsWindow
 from fingertips.chat.main import ChatWindow
+from fingertips.super_sidebar import SuperSidebar
+from fingertips.settings.config_model import config_model
+from fingertips.widget_utils import signal_bus
 
 
 log = get_logger('tray')
@@ -26,6 +30,21 @@ def add_action(menu, name, connect_func, parent, icon=None):
     action.triggered.connect(connect_func)
     menu.addAction(action)
     return action
+
+
+def init_super_sidebar(tray, value=None):
+    if tray.super_sidebar:
+        tray.super_sidebar.hide_panel()
+        tray.super_sidebar.deleteLater()
+        tray.super_sidebar = None
+
+    if config_model.enable_super_sidebar.value:
+        tray.super_sidebar = SuperSidebar(
+            config_model.super_sidebar_position.value,
+            config_model.super_sidebar_width.value,
+            config_model.super_sidebar_opacity.value,
+            config_model.super_sidebar_type.value == 'acrylic',
+        )
 
 
 def create_tray(app):
@@ -44,6 +63,10 @@ def create_tray(app):
     add_action(menu, '聊天窗口', chat_window.show, app, qfluentwidgets.FluentIcon.CHAT.icon())
     add_action(menu, '系统配置', settings_window.show, app, 'fa.gear')
     add_action(menu, '退出', app.exit, app, 'mdi.power-standby')
+
+    tray.super_sidebar = None
+    init_super_sidebar(tray)
+    signal_bus.super_sidebar_config_changed.connect(partial(init_super_sidebar, tray))
 
     return tray
 

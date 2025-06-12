@@ -15,7 +15,9 @@ openai = "^1.23.2"
 pyperclip = "^1.8.2"
 dataset = "^1.6.2"
 markdown2 = {extras = ["all"], version = "^2.4.13"}
-pyside2-fluent-widgets = "^1.5.7"
+pyside2-fluent-widgets = {extras = ["full"], version = "^1.8.1"}
+numpy = "<2.0"
+requests = "^2.32.3"
 
 [build-system]
 requires = ["poetry-core"]
