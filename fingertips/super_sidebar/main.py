@@ -1,16 +1,64 @@
 import sys
+import uuid
+
 from PySide2.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout,  QPushButton, QHBoxLayout, QGraphicsOpacityEffect
 from PySide2.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QObject, QEasingCurve, \
     QPoint, QSize
-from PySide2.QtGui import QCursor, QColor, QPainter, QBrush, QLinearGradient
+from PySide2.QtGui import QCursor, QColor, QPainter, QBrush, QLinearGradient, QIcon
 import qtawesome
 import qfluentwidgets
+from qfluentwidgets.common.animation import TranslateYAnimation
 
 from fingertips.super_sidebar.acrylic_style import WindowEffect
-from fingertips.super_sidebar.digital_clock_card import DigitalClockCard
-from fingertips.super_sidebar.software_card import SoftwareCard
 from fingertips.super_sidebar.layout import ContentView
 from fingertips.settings.config_model import config_model
+from fingertips.super_sidebar.sidebar_widget_utils import discover_sidebar_widgets
+
+
+class MenuButton(QPushButton):
+    """ 菜单按钮 """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._menu = None
+        self.arrow_ani = TranslateYAnimation(self)
+
+    def set_menu(self, menu):
+        self._menu = menu
+
+    def menu(self):
+        return self._menu
+
+    def _show_menu(self):
+        if not self.menu():
+            return
+
+        menu = self.menu()
+        menu.view.setMinimumWidth(self.width())
+        menu.view.adjustSize()
+        menu.adjustSize()
+
+        # determine the animation type by choosing the maximum height of view
+        x = -menu.width()//2 + menu.layout().contentsMargins().left() + self.width()//2
+        pd = self.mapToGlobal(QPoint(x, self.height()))
+        hd = menu.view.heightForAnimation(pd, qfluentwidgets.MenuAnimationType.DROP_DOWN)
+
+        pu = self.mapToGlobal(QPoint(x, 0))
+        hu = menu.view.heightForAnimation(pu, qfluentwidgets.MenuAnimationType.PULL_UP)
+
+        if hd >= hu:
+            menu.view.adjustSize(pd, qfluentwidgets.MenuAnimationType.DROP_DOWN)
+            menu.exec(pd, aniType=qfluentwidgets.MenuAnimationType.DROP_DOWN)
+        else:
+            menu.view.adjustSize(pu, qfluentwidgets.MenuAnimationType.PULL_UP)
+            menu.exec(pu, aniType=qfluentwidgets.MenuAnimationType.PULL_UP)
+
+    def _hide_menu(self):
+        if self.menu():
+            self.menu().hide()
+
+    def mouseReleaseEvent(self, e):
+        super().mouseReleaseEvent(e)
+        self._show_menu()
 
 
 class SuperSidebar(QMainWindow):
@@ -32,6 +80,8 @@ class SuperSidebar(QMainWindow):
             opacity: 背景透明度，0.0-1.0的浮点数，0为完全透明，1为完全不透明
         """
         super().__init__()
+
+        self._widget_menu = qfluentwidgets.RoundMenu(parent=self)
 
         # 保存位置设置
         self.position = position
@@ -91,7 +141,7 @@ class SuperSidebar(QMainWindow):
 
         # 设置动画
         self.animation = QPropertyAnimation(self, b"geometry")
-        self.animation.setDuration(260)
+        self.animation.setDuration(250)
         self.animation.setEasingCurve(QEasingCurve.OutCubic)
 
         # 设置初始状态为隐藏
@@ -327,15 +377,24 @@ class SuperSidebar(QMainWindow):
         self.edit_button.setStyleSheet(button_style)
         self.edit_button.clicked.connect(self.toggle_edit_mode)
 
+        menu_icon = qtawesome.icon('fa.bars', color='#DDD')
+        self.menu_button = MenuButton(menu_icon, '')
+        self.menu_button.setIconSize(QSize(24, 24))
+        self.menu_button.setStyleSheet(button_style)
+        self._set_hide_button(self.menu_button, True)
+        self.menu_button.set_menu(self._widget_menu)
+
         # 根据侧边栏位置设置按钮布局
         if self.position == self.LEFT:
             # 左侧侧边栏，按钮在左边，按顺序排列
+            top_layout.addWidget(self.menu_button)
             top_layout.addWidget(self.edit_button)
             top_layout.addWidget(self.pin_button)
             top_layout.addStretch()  # 添加弹性空间推到右边
         else:  # RIGHT
             # 右侧侧边栏，按钮在右边
             top_layout.addStretch()  # 添加弹性空间推到左边
+            top_layout.addWidget(self.menu_button)
             top_layout.addWidget(self.edit_button)
             top_layout.addWidget(self.pin_button)
 
@@ -351,25 +410,39 @@ class SuperSidebar(QMainWindow):
         self.content_view = ContentView()
         self.content_view.set_edit_mode(False)
         content_layout.addWidget(self.content_view)
-
-        # wc = DigitalClockCard(self)
-        # content_layout.addWidget(wc)
-        #
-        # sc = SoftwareCard(self)
-        # content_layout.addWidget(sc)
-
         main_layout.addLayout(content_layout)
-        # main_layout.addStretch()
 
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
-        self.content_view.add_label_widget(0,0, 200,100, '测试1',  QColor(255, 255, 200))
+        self._register_sidebar_widget()
+
+    def _register_sidebar_widget(self):
+        widgets = discover_sidebar_widgets()
+        widgets_by_category = {}
+        for widget in widgets:
+            category = getattr(widget, 'category', '未分类')
+            if category not in widgets_by_category:
+                widgets_by_category[category] = []
+            widgets_by_category[category].append(widget)
+
+        for category, widgets in widgets_by_category.items():
+            category_menu = qfluentwidgets.RoundMenu(category, self._widget_menu)
+            self._widget_menu.addMenu(category_menu)
+
+            for widget in widgets:
+                icon = getattr(widget, 'icon', None)
+                if icon:
+                    if not isinstance(icon, QIcon):
+                        icon = qtawesome.icon(icon)
+
+                action = qfluentwidgets.Action(
+                        getattr(widget, 'name', '未命名'),
+                        self,
+                        triggered=lambda w=widget: self.content_view.add_widget(widget=w)
+                    )
+                action.setToolTip(getattr(widget, 'description', ''))
+                category_menu.addAction(action)
+
+        # 加载保存的节点配置
+        self.content_view.load_nodes_from_config()
 
     def toggle_edit_mode(self):
         self.is_edit_mode = self.edit_button.isChecked()
@@ -378,6 +451,7 @@ class SuperSidebar(QMainWindow):
         if self.is_edit_mode:
             self.edit_button.setIcon(qtawesome.icon('fa.check', color='#EEE'))
             self.edit_button.setToolTip("退出编辑模式")
+            self._set_hide_button(self.menu_button, False)
             # 进入编辑模式时自动固定面板
             if not self.is_pinned:
                 self.is_pinned = True
@@ -387,6 +461,7 @@ class SuperSidebar(QMainWindow):
         else:
             self.edit_button.setIcon(qtawesome.icon('fa.edit', color='#DDD'))
             self.edit_button.setToolTip("进入编辑模式")
+            self._set_hide_button(self.menu_button, True)
             # 退出编辑模式时自动取消固定面板
             if self.is_pinned:
                 self.is_pinned = False
@@ -426,23 +501,26 @@ class SuperSidebar(QMainWindow):
                 # 确保按钮在取消固定时恢复透明度
                 self._restore_button_opacity()
 
+    def _set_hide_button(self, button, hide):
+        if hide:
+            opacity_effect = QGraphicsOpacityEffect(self)
+            opacity_effect.setOpacity(0.0)  # 完全透明
+            button.setGraphicsEffect(opacity_effect)
+        else:
+            button.setGraphicsEffect(None)
+
     def _hide_buttons_with_opacity(self):
         """使用透明度效果隐藏按钮"""
-        # 为编辑按钮设置透明效果
-        self.edit_opacity_effect = QGraphicsOpacityEffect()
-        self.edit_opacity_effect.setOpacity(0.0)  # 完全透明
-        self.edit_button.setGraphicsEffect(self.edit_opacity_effect)
-        
-        # 为固定按钮设置透明效果
-        self.pin_opacity_effect = QGraphicsOpacityEffect()
-        self.pin_opacity_effect.setOpacity(0.0)  # 完全透明
-        self.pin_button.setGraphicsEffect(self.pin_opacity_effect)
+        self._set_hide_button(self.edit_button, True)
+        self._set_hide_button(self.pin_button, True)
+        self._set_hide_button(self.menu_button, True)
 
     def _restore_button_opacity(self):
         """恢复按钮的正常透明度"""
         # 移除透明度效果，恢复按钮的正常显示
         self.edit_button.setGraphicsEffect(None)
         self.pin_button.setGraphicsEffect(None)
+        self.menu_button.setGraphicsEffect(None)
 
     def check_mouse_position(self):
         if self.is_animating or self.is_pinned:  # 如果已固定，不检查鼠标位置

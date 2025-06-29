@@ -88,7 +88,7 @@ def clear_clipboard():
 
 
 def get_exe_path(file_path):
-    if file_path.endswith('.lnk'):
+    if file_path.lower().endswith('.lnk'):
         shell = win32com.client.Dispatch('WScript.Shell')
         shortcut = shell.CreateShortCut(file_path)
         return shortcut.Targetpath

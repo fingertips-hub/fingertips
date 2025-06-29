@@ -40,6 +40,7 @@ class Config(qfluentwidgets.QConfig):
        'super_sidebar', 'position', 'right', qfluentwidgets.OptionsValidator(['left', 'right']))
     super_sidebar_plugin_path = qfluentwidgets.ConfigItem(
       'super_sidebar', 'plugin_path', f'{CONFIG_ROOT}/plugins'.replace('\\', '/'))
+    super_sidebar_node = qfluentwidgets.ConfigItem('super_sidebar', 'node', None)
 
     update_on_start = qfluentwidgets.ConfigItem(
         'update', 'update_on_start', True, qfluentwidgets.BoolValidator())

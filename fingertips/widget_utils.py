@@ -8,6 +8,7 @@ class SignalBus(QtCore.QObject):
     chat_item_edited = QtCore.Signal(object)
     chat_item_deleted = QtCore.Signal()
     super_sidebar_config_changed = QtCore.Signal(dict)
+    super_sidebar_edit_mode_changed = QtCore.Signal(bool)
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, '_instance'):

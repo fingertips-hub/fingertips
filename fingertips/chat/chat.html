@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>Title</title>
-    <link href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/atom-one-dark.min.css"
@@ -12,72 +15,320 @@
     <style>
       /* 滚动条的整体样式 */
       ::-webkit-scrollbar {
-          width: 8px; /* 滚动条的宽度 */
+        width: 8px; /* 滚动条的宽度 */
       }
 
       /* 滚动条的轨道 */
       ::-webkit-scrollbar-track {
-          background: #F1F5F9; /* 轨道的背景色 */
+        background: #f1f5f9; /* 轨道的背景色 */
       }
 
       /* 滚动条的滑块 */
       ::-webkit-scrollbar-thumb {
-          background: #dddddd; /* 滑块的背景色 */
-          border-radius: 4px; /* 滑块的圆角半径 */
+        background: #dddddd; /* 滑块的背景色 */
+        border-radius: 4px; /* 滑块的圆角半径 */
       }
 
       /* 滑块在被悬停时的样式 */
       ::-webkit-scrollbar-thumb:hover {
-          background: #cccccc; /* 悬停时滑块的背景色 */
+        background: #cccccc; /* 悬停时滑块的背景色 */
       }
 
-      .button-group {
+      /* 操作按钮组 */
+      .action-buttons {
         display: none;
         position: absolute;
-        top: -30px;
-        background: rgba(255, 255, 255, 0.8);
-        border-radius: 5px;
-        padding: 5px;
+        top: -34px;
+        left: 0;
+        background: white;
+        border-radius: 4px;
+        padding: 4px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        z-index: 10;
       }
 
-      .message-container:hover .button-group {
+      .assistant-message:hover .action-buttons {
         display: flex;
+      }
+
+      .action-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        margin: 0 2px;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        color: #666;
+      }
+
+      .action-button:hover {
+        background: #f3f4f6;
+        color: #000;
+      }
+
+      /* 整体聊天容器 */
+      #chat-container {
+        background-color: #f8f9fa;
+        padding: 1rem;
+      }
+
+      /* 消息容器样式 */
+      .message-with-avatar {
+        display: flex;
+        width: 100%;
+        margin-bottom: 1.5rem;
+        position: relative;
+      }
+
+      .message-with-avatar.user-message {
+        justify-content: flex-end;
+      }
+
+      /* 头像样式 */
+      .avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        object-fit: cover;
+        margin-top: 4px;
+      }
+
+      .user-avatar-container {
+        order: 2;
+        margin-left: 8px;
+      }
+
+      .assistant-avatar-container {
+        order: 0;
+        margin-right: 8px;
+      }
+
+      /* 消息气泡样式 */
+      .message-bubble {
+        max-width: 85%;
+        padding: 12px 16px 2px 16px;
+        position: relative;
+        border-radius: 8px;
+        background-color: #f2f3f5;
+      }
+
+      .message-user {
+        background-color: #dbeafe;
+        color: #000;
+      }
+
+      .message-assistant {
+        background-color: #f3f4f6;
+        color: #000;
+      }
+
+      /* Markdown内容样式 */
+      .markdown-content {
+        overflow-x: auto;
+        line-height: 1.5;
+        font-size: 14px;
+      }
+
+      .markdown-content p {
+        margin-bottom: 0.75em;
+      }
+
+      .markdown-content ul,
+      .markdown-content ol {
+        padding-left: 1.5em;
+        margin-bottom: 0.75em;
+      }
+
+      /* 代码块样式 */
+      .markdown-content pre {
+        margin: 0.5em 0;
+        border-radius: 6px;
+        position: relative;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+      }
+
+      .markdown-content pre:before {
+        content: attr(data-language);
+        position: absolute;
+        top: 0;
+        left: 12px;
+        font-size: 12px;
+        color: #9ca3af;
+        padding: 2px 0;
+      }
+
+      .markdown-content pre code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          monospace;
+        padding: 1em;
+        display: block;
+        overflow-x: auto;
+        background-color: #ffffff;
+        margin-top: 20px;
+        border-top: 1px solid #e5e7eb;
+      }
+
+      .hljs {
+        background-color: #ffffff !important;
+        padding: 0 !important;
+      }
+
+      /* 代码复制按钮 */
+      .code-copy-button {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 4px 8px;
+        font-size: 12px;
+        color: #6b7280;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 10;
+      }
+
+      .code-copy-button:hover {
+        color: #000;
+      }
+
+      /* 行内代码 */
+      .markdown-content code:not(pre code) {
+        font-family: monospace;
+        background-color: #f3f4f6;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 0.9em;
+        color: #e01e5a;
       }
     </style>
   </head>
-  <body class="w-full h-screen bg-slate-100 text-sm">
-    <div id="app" class="w-full h-screen bg-slate-100 flex flex-col">
-      <div id="chat-container" class="flex-1 overflow-auto p-5 relative" style="overflow-x: hidden">
+  <body class="w-full h-screen bg-white text-sm">
+    <div id="app" class="w-full h-screen bg-white flex flex-col">
+      <div
+        id="chat-container"
+        class="flex-1 overflow-auto p-5 relative"
+        style="overflow-x: hidden"
+      >
         <template v-for="(item, index) in messages" :key="index">
           <div
-            class="w-full flex mb-4 message-container relative"
-            :class="{'justify-end': item.role === 'user', 'justify-start': item.role !== 'user'}"
-            @mouseenter="hoveredIndex = index"
-            @mouseleave="hoveredIndex = null"
+            class="message-with-avatar"
+            :class="{'user-message': item.role === 'user', 'assistant-message': item.role !== 'user'}"
           >
+            <!-- 用户消息 -->
             <div
-              class="button-group"
-              v-show="hoveredIndex === index"
-              :class="{'right-10': item.role === 'user', 'left-10': item.role !== 'user'}"
+              v-if="item.role === 'user'"
+              class="message-bubble message-user"
             >
-              <button @click="copyContent(item.content)" class="bg-blue-500 text-white px-2 py-1 rounded">复制</button>
-              <!-- 你可以在这里添加更多按钮 -->
+              <div class="markdown-content" v-html="item.content"></div>
             </div>
-            <div v-if="item.role === 'user'" class="flex items-start max-w-full max-w-[80%]">
-              <div class="inline-block bg-gray-50 p-4 rounded-lg text-left whitespace-normal break-words" v-html="item.content"></div>
+            <div v-if="item.role === 'user'" class="user-avatar-container">
               <img
                 src="https://registry.npmmirror.com/@lobehub/assets-emoji/1.3.0/files/assets/grinning-face.webp"
                 alt="User Avatar"
-                class="w-8 h-8 rounded-full ml-2 object-cover"
+                class="avatar"
               />
             </div>
-            <div v-else class="flex items-start max-w-full max-w-[80%]">
+
+            <!-- 助手消息 -->
+            <div v-if="item.role !== 'user'" class="assistant-avatar-container">
               <img
                 src="https://registry.npmmirror.com/@lobehub/assets-emoji/1.3.0/files/assets/robot.webp"
-                alt="User Avatar"
-                class="w-8 h-8 rounded-full mr-2 object-cover"
+                alt="Assistant Avatar"
+                class="avatar"
               />
-              <div class="inline-block bg-gray-50 p-4 rounded-lg text-left whitespace-normal break-words" v-html="item.content"></div>
+            </div>
+            <div
+              v-if="item.role !== 'user'"
+              class="message-bubble message-assistant relative"
+            >
+              <div class="action-buttons">
+                <button
+                  class="action-button"
+                  @click="copyContent(item.content)"
+                  title="复制"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect
+                      x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <path
+                      d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                    ></path>
+                  </svg>
+                </button>
+                <button class="action-button" title="刷新">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0120 0 10 10 0 01-20 0z"
+                    ></path>
+                  </svg>
+                </button>
+                <button class="action-button" title="编辑">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"
+                    ></path>
+                  </svg>
+                </button>
+                <button class="action-button" title="删除">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+              <div class="markdown-content" v-html="item.content"></div>
             </div>
           </div>
         </template>
@@ -89,14 +340,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
 
     <script type="module">
-      import { createApp, ref, onMounted, nextTick, watch } from 'https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.esm-browser.prod.js'
+      import {
+        createApp,
+        ref,
+        onMounted,
+        nextTick,
+        watch,
+      } from "https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.esm-browser.prod.js";
 
       var md = window.markdownit({
         highlight: function (str, lang) {
           if (lang && hljs.getLanguage(lang)) {
             try {
               return (
-                '<pre class="py-2"><code class="hljs rounded-md">' +
+                '<pre class="language-block" data-language="' +
+                lang +
+                '"><button class="code-copy-button"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button><code class="hljs language-' +
+                lang +
+                '">' +
                 hljs.highlight(str, { language: lang, ignoreIllegals: true })
                   .value +
                 "</code></pre>"
@@ -105,7 +366,7 @@
           }
 
           return (
-            '<pre class="py-2"><code class="hljs rounded-md">' +
+            '<pre class="language-block" data-language="text"><button class="code-copy-button"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button><code class="hljs">' +
             md.utils.escapeHtml(str) +
             "</code></pre>"
           );
@@ -114,56 +375,95 @@
 
       createApp({
         setup() {
-          const messages = ref([])
-          const hoveredIndex = ref(null)
+          const messages = ref([]);
 
           const scrollToBottom = () => {
             nextTick(() => {
-              const container = document.getElementById('chat-container')
-              container.scrollTop = container.scrollHeight
-            })
-          }
+              const container = document.getElementById("chat-container");
+              container.scrollTop = container.scrollHeight;
+            });
+          };
 
           const copyContent = (content) => {
-            const tempInput = document.createElement('textarea')
-            tempInput.value = content
-            document.body.appendChild(tempInput)
-            tempInput.select()
-            document.execCommand('copy')
-            document.body.removeChild(tempInput)
-            alert('内容已复制')
-          }
+            // 创建一个临时的文本区域元素
+            const tempInput = document.createElement("textarea");
+            // 提取HTML内容中的纯文本
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = content;
+            tempInput.value =
+              tempDiv.textContent || tempDiv.innerText || content;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            alert("内容已复制");
+          };
 
-          watch(messages, scrollToBottom, { deep: true })
+          // 添加代码块复制功能
+          const setupCodeCopyButtons = () => {
+            nextTick(() => {
+              document
+                .querySelectorAll(".code-copy-button")
+                .forEach((button) => {
+                  button.onclick = function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-          onMounted(()=>{
+                    const codeBlock = this.nextElementSibling;
+                    const code = codeBlock.textContent || "";
+
+                    navigator.clipboard.writeText(code).then(() => {
+                      const originalInnerHTML = this.innerHTML;
+                      this.innerHTML =
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                      setTimeout(() => {
+                        this.innerHTML = originalInnerHTML;
+                      }, 2000);
+                    });
+                  };
+                });
+            });
+          };
+
+          watch(
+            messages,
+            () => {
+              scrollToBottom();
+              setupCodeCopyButtons();
+            },
+            { deep: true }
+          );
+
+          onMounted(() => {
             new QWebChannel(qt.webChannelTransport, (channel) => {
-                window.Bridge = channel.objects.Bridge;
+              window.Bridge = channel.objects.Bridge;
 
-                Bridge.add_chat_item.connect(text => {
-                  const data = JSON.parse(text)
-                  data.content = md.render(data.content)
-                  // 数据带了 id 用于后续删除和修改
-                  messages.value.push(data)
-                })
+              Bridge.add_chat_item.connect((text) => {
+                const data = JSON.parse(text);
+                data.content = md.render(data.content);
+                // 数据带了 id 用于后续删除和修改
+                messages.value.push(data);
+                setupCodeCopyButtons();
+              });
 
-                Bridge.set_ai_chat.connect(text => {
-                  messages.value[messages.value.length - 1]['content'] = md.render(text)
-                })
+              Bridge.set_ai_chat.connect((text) => {
+                messages.value[messages.value.length - 1]["content"] =
+                  md.render(text);
+                setupCodeCopyButtons();
+              });
 
-                Bridge.clear_chat.connect(() => {
-                  messages.value = []
-                })
-            })
-          })
+              Bridge.clear_chat.connect(() => {
+                messages.value = [];
+              });
+            });
+          });
 
           return {
             messages,
-            hoveredIndex,
-            copyContent
-          }
-        }
-      }).mount('#app')
+            copyContent,
+          };
+        },
+      }).mount("#app");
     </script>
   </body>
 </html>

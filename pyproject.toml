@@ -18,6 +18,7 @@ markdown2 = {extras = ["all"], version = "^2.4.13"}
 pyside2-fluent-widgets = {extras = ["full"], version = "^1.8.1"}
 numpy = "<2.0"
 requests = "^2.32.3"
+beautifulsoup4 = "^4.13.4"
 
 [build-system]
 requires = ["poetry-core"]
