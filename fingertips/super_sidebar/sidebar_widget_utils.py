@@ -40,6 +40,9 @@ class SidebarWidget(QtWidgets.QWidget):
     def set_config(self, config):
         pass
 
+    def on_loaded(self):
+        pass
+
 
 def discover_sidebar_widgets():
     widgets = []

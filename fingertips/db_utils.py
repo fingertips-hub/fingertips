@@ -73,3 +73,9 @@ class ChatDB(DBBase):
 
     def update_chat(self, chat):
         self.table.update(chat, ['cid'])
+
+
+class ConfigDB(DBBase):
+    def __init__(self, config_name):
+        super().__init__()
+        self.table = self._db[config_name]

@@ -7,6 +7,7 @@ from PySide2 import QtGui
 
 from fingertips.widget_utils import signal_bus
 from fingertips.settings.config_model import config_model
+from fingertips.db_utils import ConfigDB
 
 
 class ResizableWidget(QtWidgets.QGraphicsItem):
@@ -308,6 +309,8 @@ class ResizableWidgetBase(ResizableWidget):
         self.wid = wid or str(uuid.uuid4())
         widget.context = Context()
         widget.context.wid = self.wid
+        widget.context.db_config = ConfigDB(widget_class.__name__)
+        widget.on_loaded()
 
         self.proxy = QtWidgets.QGraphicsProxyWidget(self)
         self.proxy.setWidget(widget)
