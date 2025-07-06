@@ -107,7 +107,7 @@ class HitokotoCard(SidebarWidget):
             QLabel {
                 font-size: 16px;
                 font-weight: 600;
-                color: #eee;
+                color: #fff;
                 background-color: transparent;
                 padding: 10px;
                 line-height: 1.6;
