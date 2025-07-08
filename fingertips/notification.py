@@ -285,15 +285,9 @@ class NotificationWidget(QtWidgets.QWidget):
         # 停止自动关闭定时器
         self.auto_close_timer.stop()
         
-        # 立即发送开始关闭信号，让管理器开始调整其他通知的位置
+        # 直接开始滑出动画，保持当前显示状态
         self.closing_started.emit()
-        
-        # 如果当前是展开状态，先折叠
-        if self.is_expanded:
-            self._collapse_notification()
-            QtCore.QTimer.singleShot(450, self._start_slide_out)  # 等待折叠完成
-        else:
-            self._start_slide_out()
+        self._start_slide_out()
             
     def _start_slide_out(self):
         """开始滑出动画"""
@@ -359,8 +353,8 @@ class NotificationWidget(QtWidgets.QWidget):
         self.is_expanded = True
         self.is_expanding_or_collapsing = True
         
-        # 显示详细信息
-        self.message_label.setVisible(True)
+        # 展开时让标题逐渐隐藏，避免抖动
+        self._animate_title_fade_out()
         
         # 计算新位置和尺寸
         desktop = QtWidgets.QApplication.desktop()
@@ -382,6 +376,9 @@ class NotificationWidget(QtWidgets.QWidget):
         self.expand_animation.setEndValue(target_rect)
         self.expand_animation.finished.connect(self._on_expand_finished)
         self.expand_animation.start()
+        
+        # 延迟显示详细信息，让动画先进行一部分，避免文字抖动
+        QtCore.QTimer.singleShot(150, lambda: self.message_label.setVisible(True))
         
         # 延迟发送尺寸变化信号，让当前通知的动画先开始
         QtCore.QTimer.singleShot(50, self.size_changed.emit)
@@ -414,8 +411,11 @@ class NotificationWidget(QtWidgets.QWidget):
         self.is_expanded = False
         self.is_expanding_or_collapsing = True
         
-        # 立即隐藏详细信息，避免在动画过程中显示
+        # 立即隐藏详细信息，避免动画过程中的布局重新计算导致抖动
         self.message_label.setVisible(False)
+        
+        # 收起时让标题逐渐显示，避免抖动
+        self._animate_title_fade_in()
         
         # 计算新位置和尺寸
         desktop = QtWidgets.QApplication.desktop()
@@ -436,6 +436,7 @@ class NotificationWidget(QtWidgets.QWidget):
         self.expand_animation.setStartValue(current_rect)
         self.expand_animation.setEndValue(target_rect)
         self.expand_animation.finished.connect(self._on_collapse_finished)
+        
         self.expand_animation.start()
         
         # 延迟发送尺寸变化信号，让当前通知的动画先开始
@@ -484,6 +485,68 @@ class NotificationWidget(QtWidgets.QWidget):
                 not self.is_closing and 
                 not self.is_expanding_or_collapsing and
                 not self.is_animating)
+    
+    def _animate_title_fade_out(self):
+        """展开时让标题逐渐隐藏并从布局中移除"""
+        # 创建透明度效果
+        self.title_opacity_effect = QtWidgets.QGraphicsOpacityEffect()
+        self.title_label.setGraphicsEffect(self.title_opacity_effect)
+        
+        # 创建透明度动画
+        self.title_fade_animation = QtCore.QPropertyAnimation(self.title_opacity_effect, b"opacity")
+        self.title_fade_animation.setDuration(200)  # 稍微缩短动画时间
+        self.title_fade_animation.setStartValue(1.0)
+        self.title_fade_animation.setEndValue(0.0)
+        self.title_fade_animation.setEasingCurve(QtCore.QEasingCurve.InOutCubic)
+        
+        # 动画完成后从布局中移除标题，让message_label真正居中
+        self.title_fade_animation.finished.connect(self._remove_title_from_layout)
+        self.title_fade_animation.start()
+        
+    def _remove_title_from_layout(self):
+        """从布局中移除标题，让message_label真正居中"""
+        # 从布局中移除标题
+        self.content_layout.removeWidget(self.title_label)
+        self.title_label.setParent(None)
+        
+        # 清理透明度效果
+        self.title_label.setGraphicsEffect(None)
+        
+    def _animate_title_fade_in(self):
+        """收起时让标题逐渐显示并重新加入布局"""
+        # 先将标题重新加入布局
+        self._add_title_to_layout()
+        
+        # 创建透明度效果
+        self.title_opacity_effect = QtWidgets.QGraphicsOpacityEffect()
+        self.title_label.setGraphicsEffect(self.title_opacity_effect)
+        
+        # 创建透明度动画
+        self.title_fade_animation = QtCore.QPropertyAnimation(self.title_opacity_effect, b"opacity")
+        self.title_fade_animation.setDuration(200)  # 稍微缩短动画时间
+        self.title_fade_animation.setStartValue(0.0)
+        self.title_fade_animation.setEndValue(1.0)
+        self.title_fade_animation.setEasingCurve(QtCore.QEasingCurve.InOutCubic)
+        
+        # 动画完成后移除graphics effect，恢复正常状态
+        self.title_fade_animation.finished.connect(self._remove_title_effect)
+        self.title_fade_animation.start()
+        
+    def _add_title_to_layout(self):
+        """将标题重新加入布局"""
+        # 检查标题是否已经在布局中
+        if self.title_label.parent() == self.content_container:
+            return
+            
+        # 重新设置父级
+        self.title_label.setParent(self.content_container)
+        
+        # 重新加入布局（在stretch和message_label之间）
+        self.content_layout.insertWidget(1, self.title_label)
+        
+    def _remove_title_effect(self):
+        """移除标题的透明度效果，恢复正常状态"""
+        self.title_label.setGraphicsEffect(None)
 
  
 class NotificationManager:
