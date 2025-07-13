@@ -108,8 +108,8 @@ class SuperSidebar(QMainWindow):
         # 获取所有屏幕信息
         self.update_screen_info()
 
-        # 设置窗口尺寸 - 宽度固定
-        self.panel_width = panel_width
+        # 设置窗口尺寸 - 从配置中读取宽度设置，确保在有效范围内
+        self.panel_width = max(self.MIN_WIDTH, min(self.MAX_WIDTH, config_model.super_sidebar_width.value))
 
         if self.position == self.LEFT:
             self.setFixedSize(self.panel_width, self.leftmost_screen_height)

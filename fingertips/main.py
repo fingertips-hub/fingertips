@@ -1,3 +1,4 @@
+import os
 import sys
 import ctypes
 from functools import partial
@@ -49,7 +50,7 @@ def init_super_sidebar(tray, value=None):
 
 def create_tray(app):
     tray = QtWidgets.QSystemTrayIcon()
-    tray.setIcon(QtGui.QIcon('res/icon.png'))
+    tray.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res/icon.png')))
 
     chat_window = ChatWindow()
     window = Fingertips(chat_window)

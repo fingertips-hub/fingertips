@@ -1,3 +1,4 @@
+import os
 from functools import partial
 
 from PySide2 import QtCore
@@ -27,7 +28,8 @@ class AIResultWindow(qframelesswindow.FramelessDialog):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
         self.setTitleBar(qframelesswindow.StandardTitleBar(self))
-        self.titleBar.setIcon(QtGui.QIcon('res/icon.png'))
+        self.titleBar.setIcon(QtGui.QIcon(QtGui.QIcon(os.path.join(
+            os.path.dirname(__file__), 'res/icon.png'))))
         self.titleBar.setTitle(data['action']['name'])
         self.titleBar.minBtn.hide()
         self.titleBar.maxBtn.hide()

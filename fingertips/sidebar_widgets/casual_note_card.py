@@ -30,7 +30,7 @@ class CasualNoteCard(SidebarWidget):
         self.note_text_edit = QtWidgets.QTextEdit(self)
         self.note_text_edit.setPlaceholderText('输入您的笔记...')
         self.note_text_edit.mouseDoubleClickEvent = self.note_double_clicked
-        self.note_text_edit.focusOutEvent = self.note_double_focus_out
+        self.note_text_edit.focusOutEvent = self.note_focus_out
 
         self.note_text_edit.setStyleSheet("""
             QTextEdit {
@@ -56,7 +56,7 @@ class CasualNoteCard(SidebarWidget):
 
         super(QtWidgets.QTextEdit, self.note_text_edit).mouseDoubleClickEvent(event)
 
-    def note_double_focus_out(self, event):
+    def note_focus_out(self, event):
         self.save_config_signal.emit()
         super(QtWidgets.QTextEdit, self.note_text_edit).focusOutEvent(event)
 

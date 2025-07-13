@@ -290,7 +290,7 @@ class ResultItem(QtWidgets.QWidget):
         self.load_style()
 
     def load_style(self):
-        with open('res/result_item.css') as f:
+        with open(os.path.join(os.path.dirname(__file__), 'res/result_item.css')) as f:
             self.setStyleSheet(f.read())
 
 

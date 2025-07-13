@@ -122,7 +122,54 @@ class SoftwareListWidget(QtWidgets.QListWidget):
         self.setResizeMode(QtWidgets.QListView.Adjust)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setSpacing(2)
-        self.setStyleSheet('border: none;')
+        self.setStyleSheet('''
+            QListWidget {
+                border: none;
+                background-color: transparent;
+            }
+            
+            /* 垂直滚动条样式 */
+            QScrollBar:vertical {
+                background-color: rgba(240, 240, 240, 0.3);
+                width: 8px;
+                border: none;
+                border-radius: 4px;
+                margin: 0px;
+            }
+            
+            /* 滚动条滑块 */
+            QScrollBar::handle:vertical {
+                background-color: rgba(160, 160, 160, 0.8);
+                min-height: 20px;
+                border-radius: 4px;
+                margin: 0px;
+            }
+            
+            /* 滚动条滑块悬停效果 */
+            QScrollBar::handle:vertical:hover {
+                background-color: rgba(0, 122, 204, 0.8);
+            }
+            
+            /* 滚动条滑块按下效果 */
+            QScrollBar::handle:vertical:pressed {
+                background-color: rgba(0, 122, 204, 1.0);
+            }
+            
+            /* 隐藏滚动条上下箭头 */
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical {
+                height: 0px;
+                width: 0px;
+                background: none;
+                border: none;
+            }
+            
+            /* 隐藏滚动条页面区域 */
+            QScrollBar::add-page:vertical,
+            QScrollBar::sub-page:vertical {
+                background: none;
+            }
+        ''')
 
         self.setAcceptDrops(True)
 

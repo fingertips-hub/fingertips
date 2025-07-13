@@ -1,3 +1,5 @@
+import os
+
 import qframelesswindow
 from PySide2 import QtWidgets
 from PySide2 import QtCore
@@ -158,7 +160,7 @@ class ChatSettingDialog(qframelesswindow.AcrylicWindow):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
         self.setTitleBar(qframelesswindow.StandardTitleBar(self))
-        self.titleBar.setIcon(QtGui.QIcon('res/icon.png'))
+        self.titleBar.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(__file__), 'res/icon.png')))
         self.titleBar.setTitle('当前会话配置')
 
         layout = QtWidgets.QVBoxLayout(self)
