@@ -51,7 +51,6 @@ class TabButton(QtWidgets.QPushButton):
                     border-radius: 6px;
                     font-size: 12px;
                     margin-left: 6px;
-                    cursor: pointer;
                 }
                 QPushButton:hover {
                     color: #ff4444;

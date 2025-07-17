@@ -233,7 +233,6 @@ class DigitalClockCard(SidebarWidget):
                 font-weight: bold;
                 background: transparent;
                 border: none;
-                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
             }
         """)
         
@@ -250,7 +249,6 @@ class DigitalClockCard(SidebarWidget):
                 color: #EEE;
                 background: transparent;
                 border: none;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
             }
         """)
         
@@ -267,7 +265,6 @@ class DigitalClockCard(SidebarWidget):
                 color: #EEE;
                 background: transparent;
                 border: none;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
             }
         """)
         
@@ -295,7 +292,6 @@ class DigitalClockCard(SidebarWidget):
                 color: #EEE;
                 background: transparent;
                 border: none;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
             }
         """)
         city_font = QFont("Segoe UI", 12, QFont.Normal)  # 从9增大到11
@@ -331,7 +327,6 @@ class DigitalClockCard(SidebarWidget):
                 font-weight: bold;
                 background: transparent;
                 border: none;
-                text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
             }
         """)
         temp_font = QFont("Segoe UI", 20, QFont.Bold)  # 从16增大到20
@@ -345,7 +340,6 @@ class DigitalClockCard(SidebarWidget):
                 color: #EEE;
                 background: transparent;
                 border: none;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             }
         """)
         desc_font = QFont("Segoe UI", 11, QFont.Bold)  # 从8增大到10
@@ -370,7 +364,6 @@ class DigitalClockCard(SidebarWidget):
                 color: #EEE;
                 background: transparent;
                 border: none;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             }
         """)
         wind_font = QFont("Segoe UI", 10, QFont.Normal)  # 从7增大到9
@@ -384,7 +377,6 @@ class DigitalClockCard(SidebarWidget):
                 color: #EEE;
                 background: transparent;
                 border: none;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             }
         """)
         humidity_font = QFont("Segoe UI", 10, QFont.Normal)  # 从7增大到9
