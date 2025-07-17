@@ -527,7 +527,7 @@ class SuperSidebar(QMainWindow):
             return
 
         mouse_pos = QCursor.pos()
-        activation_zone = 5  # 距离屏幕边缘的激活区域像素数
+        activation_zone = 2  # 距离屏幕边缘的激活区域像素数
 
         if self.position == self.LEFT:
             # 检查鼠标是否在最左侧屏幕上
@@ -546,7 +546,7 @@ class SuperSidebar(QMainWindow):
                 if self.edge_hover_timer.isActive():
                     # 如果鼠标移动了太多，重置计时器
                     if self.last_edge_position and (
-                            abs(mouse_pos.y() - self.last_edge_position.y()) > 5):
+                            abs(mouse_pos.y() - self.last_edge_position.y()) > 3):
                         self.last_edge_position = QPoint(mouse_pos)
                         self.edge_hover_timer.start(self.hover_delay)
                 else:
@@ -578,7 +578,7 @@ class SuperSidebar(QMainWindow):
                 if self.edge_hover_timer.isActive():
                     # 如果鼠标移动了太多，重置计时器
                     if self.last_edge_position and (
-                            abs(mouse_pos.y() - self.last_edge_position.y()) > 5):
+                            abs(mouse_pos.y() - self.last_edge_position.y()) > 3):
                         self.last_edge_position = QPoint(mouse_pos)
                         self.edge_hover_timer.start(self.hover_delay)
                 else:
@@ -598,7 +598,7 @@ class SuperSidebar(QMainWindow):
         """在延迟后显示面板"""
         # 再次检查鼠标位置，确保鼠标仍在边缘
         mouse_pos = QCursor.pos()
-        activation_zone = 5
+        activation_zone = 2
 
         if self.position == self.LEFT:
             is_on_target_screen = (
