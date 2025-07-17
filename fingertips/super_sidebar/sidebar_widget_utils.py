@@ -42,6 +42,22 @@ class SidebarWidget(QtWidgets.QWidget):
 
     def on_loaded(self):
         pass
+        
+    def get_dialog_parent(self):
+        """
+        获取适合作为dialog父窗口的窗口对象
+        
+        这个方法解决了SuperSidebar由于特殊窗口标志无法作为dialog父窗口的问题
+        """
+        # 向上查找SuperSidebar实例
+        parent = self.parent()
+        while parent:
+            if hasattr(parent, 'get_dialog_parent'):
+                return parent.get_dialog_parent()
+            parent = parent.parent()
+        
+        # 如果找不到SuperSidebar，返回None（这样dialog会使用默认的父窗口策略）
+        return None
 
 
 def discover_sidebar_widgets():

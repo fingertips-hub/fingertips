@@ -80,6 +80,12 @@ class SuperSidebar(QMainWindow):
             opacity: 背景透明度，0.0-1.0的浮点数，0为完全透明，1为完全不透明
         """
         super().__init__()
+        
+        # 设置应用程序不在最后一个窗口关闭时退出，防止dialog关闭导致程序退出
+        QApplication.instance().setQuitOnLastWindowClosed(False)
+        
+        # 创建一个隐藏的父窗口，用于作为dialog的父窗口
+        self._create_dialog_parent()
 
         self._widget_menu = qfluentwidgets.RoundMenu(parent=self)
 
@@ -186,6 +192,30 @@ class SuperSidebar(QMainWindow):
             self.windowEffect.setAcrylicEffect(self.winId(), '99999960')
         else:
             self.windowEffect.setDefault(self.winId())
+
+    def _create_dialog_parent(self):
+        """创建一个隐藏的父窗口，专门用于作为dialog的父窗口"""
+        self.dialog_parent = QMainWindow()
+        self.dialog_parent.hide()  # 保持隐藏
+        # 设置基本属性，让它可以作为合适的父窗口
+        self.dialog_parent.setWindowFlags(Qt.Widget)
+        self.dialog_parent.setAttribute(Qt.WA_DontShowOnScreen)
+        # 确保这个窗口不会显示在任务栏中
+        self.dialog_parent.setAttribute(Qt.WA_DeleteOnClose, False)
+
+    def get_dialog_parent(self):
+        """
+        获取适合作为dialog父窗口的窗口对象
+        
+        这个方法解决了SuperSidebar由于特殊窗口标志无法作为dialog父窗口的问题
+        """
+        # 确保dialog_parent仍然有效
+        if hasattr(self, 'dialog_parent') and self.dialog_parent is not None:
+            return self.dialog_parent
+        else:
+            # 如果dialog_parent不存在或已被销毁，重新创建
+            self._create_dialog_parent()
+            return self.dialog_parent
 
     def set_opacity(self, opacity):
         """设置背景透明度"""
@@ -837,6 +867,16 @@ class SuperSidebar(QMainWindow):
         self.setGeometry(new_x, new_y, new_width, new_height)
         self.setFixedSize(new_width, new_height)
         self.repaint()
+        
+    def closeEvent(self, event):
+        """窗口关闭事件，清理资源"""
+        # 清理dialog父窗口
+        if hasattr(self, 'dialog_parent') and self.dialog_parent is not None:
+            self.dialog_parent.close()
+            self.dialog_parent.deleteLater()
+            self.dialog_parent = None
+        
+        super().closeEvent(event)
 
 
 class MouseDetector(QObject):
