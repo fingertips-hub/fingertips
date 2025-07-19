@@ -52,8 +52,22 @@ class DecisionScrollWidget(QtWidgets.QWidget):
         self.current_offset = 0
         self.target_offset = 0
         self.selected_index = 0
-        # 强制重绘
-        self.update()
+        
+        # 停止任何正在进行的动画
+        if hasattr(self, 'animation') and self.animation:
+            self.animation.stop()
+        self.is_scrolling = False
+        
+        # 强制彻底刷新界面
+        self.repaint()  # 立即重绘
+        self.update()   # 标记需要更新
+        
+        # 处理事件队列，确保界面立即更新
+        if QtWidgets.QApplication.instance():
+            QtWidgets.QApplication.processEvents()
+            
+        # 延迟再次刷新，确保完全更新
+        QTimer.singleShot(50, self.update)
         
     def start_spin(self):
         """开始滚动选择"""
@@ -184,6 +198,14 @@ class DecisionScrollWidget(QtWidgets.QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setRenderHint(QPainter.TextAntialiasing)
+        
+        # 确保使用最新的选项数据
+        if not hasattr(self, '_last_options') or self._last_options != self.options:
+            self._last_options = self.options.copy()
+            # 当选项发生变化时，强制重置滚动状态
+            if not self.is_scrolling:
+                self.current_offset = 0
+                self.target_offset = 0
         
         # 获取绘制区域
         rect = self.rect()
@@ -559,7 +581,7 @@ class RandomDecisionCard(SidebarWidget):
         super().__init__(parent)
         
         # 数据
-        self.options = ["去看电影", "在家休息", "出去吃饭", "运动健身"]
+        self.options = []
         self.history = []  # 历史记录
         
         self.setup_ui()
@@ -578,7 +600,7 @@ class RandomDecisionCard(SidebarWidget):
         # 主布局
         main_layout = QtWidgets.QVBoxLayout(self)
         main_layout.setContentsMargins(16, 16, 16, 16)
-        main_layout.setSpacing(6)
+        main_layout.setSpacing(2)
         
         # 头部
         header_layout = QtWidgets.QHBoxLayout()
@@ -752,6 +774,17 @@ class RandomDecisionCard(SidebarWidget):
         
         main_layout.addLayout(history_layout)
         
+        # 确保组件初始化时正确显示选项
+        QTimer.singleShot(100, self._initial_refresh)
+    
+    def _initial_refresh(self):
+        """初始刷新方法，确保组件初始化时正确显示"""
+        # 强制设置选项到滚动组件
+        self.decision_scroll.set_options(self.options)
+        
+        # 强制刷新界面
+        self._delayed_refresh()
+        
     def start_decision(self):
         """开始决策"""
         if len(self.options) < 2:
@@ -836,12 +869,49 @@ class RandomDecisionCard(SidebarWidget):
             new_options = dialog.get_options()
             if len(new_options) >= 2:
                 self.options = new_options
+                
+                # 强制刷新滚动组件
                 self.decision_scroll.set_options(self.options)
+                
+                # 隐藏之前的结果
+                self.result_label.hide()
+                
+                # 彻底刷新整个主组件
+                self.repaint()  # 立即重绘父组件
+                self.update()   # 标记父组件需要更新
+                
+                # 强制刷新子组件
+                self.decision_scroll.repaint()
+                self.decision_scroll.update()
+                
+                # 处理事件队列，确保界面立即更新
+                if QtWidgets.QApplication.instance():
+                    QtWidgets.QApplication.processEvents()
+                
+                # 多次延迟刷新，确保完全更新
+                QTimer.singleShot(50, lambda: self._delayed_refresh())
+                QTimer.singleShot(100, lambda: self._delayed_refresh())
+                
+                # 保存配置
                 self.save_config_signal.emit()
             else:
                 # 使用合适的父窗口
                 dialog_parent = self.get_dialog_parent()
                 QtWidgets.QMessageBox.warning(dialog_parent, "提示", "至少需要2个选项")
+    
+    def _delayed_refresh(self):
+        """延迟刷新方法，确保界面完全更新"""
+        # 强制重绘主组件和子组件
+        self.repaint()
+        self.decision_scroll.repaint()
+        
+        # 标记需要更新
+        self.update()
+        self.decision_scroll.update()
+        
+        # 处理事件队列
+        if QtWidgets.QApplication.instance():
+            QtWidgets.QApplication.processEvents()
                 
     def get_config(self):
         """获取配置"""
@@ -862,8 +932,14 @@ class RandomDecisionCard(SidebarWidget):
             return
             
         # 加载选项
+        old_options = self.options.copy()
         self.options = config.get("options", self.options)
-        self.decision_scroll.set_options(self.options)
+        
+        # 如果选项发生了变化，强制刷新界面
+        if old_options != self.options:
+            self.decision_scroll.set_options(self.options)
+            # 彻底刷新界面
+            self._delayed_refresh()
         
         # 加载历史记录
         history_data = config.get("history", [])
