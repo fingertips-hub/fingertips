@@ -122,31 +122,39 @@ class Fingertips(QtWidgets.QWidget):
         scrollbar = self.ask_viewer.verticalScrollBar()
         # 检查是否已经滚动到底部
         if scrollbar.value() != scrollbar.maximum():
-            QtCore.QTimer.singleShot(
-                100,
-                lambda: scrollbar.setValue(scrollbar.maximum())
-            )
+            # 使用成员函数替代lambda避免回调警告
+            QtCore.QTimer.singleShot(100, self._scroll_to_bottom)
+    
+    def _scroll_to_bottom(self):
+        """滚动到底部的回调函数"""
+        if hasattr(self, 'ask_viewer') and self.ask_viewer:
+            scrollbar = self.ask_viewer.verticalScrollBar()
+            if scrollbar:
+                scrollbar.setValue(scrollbar.maximum())
 
     def init_hotkey(self):
         global_shortcuts = {
             config_model.main_window_shortcut.value: '',
             config_model.chat_window_shortcut.value: 'show_chat',
             config_model.action_menu_shortcut.value: 'show_menus',
-            config_model.ai_resend_shortcut.value: 'ai_resend',
+            config_model.ai_resend_shortcut.value: 'ai_resend'
         }
         plugin_shortcuts = self.plugin_register.get_keyword_by_shortcut()
-        if set(global_shortcuts) & set(plugin_shortcuts):
-            log.error('There are duplicate shortcuts.')
+        
+        # 检查是否有重复的快捷键
+        duplicates = set(global_shortcuts.keys()) & set(plugin_shortcuts.keys())
+        if duplicates:
             log.error(u'global_shortcuts: {}'.format(global_shortcuts))
             log.error(u'plugin_shortcuts: {}'.format(plugin_shortcuts))
             raise ValueError('There are duplicate shortcuts.')
 
-        global_shortcuts.update(self.plugin_register.get_keyword_by_shortcut())
+        global_shortcuts.update(plugin_shortcuts)
 
-        hotkeys = HotkeyThread(global_shortcuts, self)
-        hotkeys.show_main_sign.connect(self.set_visible)
-        hotkeys.shortcut_triggered.connect(self.shortcut_triggered)
-        hotkeys.start()
+        # 保存热键线程实例以便后续清理
+        self.hotkeys = HotkeyThread(global_shortcuts, self)
+        self.hotkeys.show_main_sign.connect(self.set_visible)
+        self.hotkeys.shortcut_triggered.connect(self.shortcut_triggered)
+        self.hotkeys.start()
 
     def software_list_widget_item_double_clicked(self, exe_path):
         os.startfile(exe_path)
@@ -366,6 +374,27 @@ class Fingertips(QtWidgets.QWidget):
             self.setVisible(False)
         else:
             self.set_show()
+
+    def closeEvent(self, event):
+        """窗口关闭时清理资源"""
+        try:
+            # 停止所有子对象的定时器
+            for child in self.children():
+                if isinstance(child, QtCore.QTimer):
+                    child.stop()
+            
+            # 停止热键线程
+            if hasattr(self, 'hotkeys') and self.hotkeys.isRunning():
+                log.info('窗口关闭，清理热键线程...')
+                self.hotkeys.stop()
+                self.hotkeys.wait(500)  # 等待0.5秒
+                if self.hotkeys.isRunning():
+                    log.warning('热键线程未能正常停止，强制终止')
+                    self.hotkeys.terminate()
+        except Exception as e:
+            log.error(f'窗口关闭时清理资源出错: {e}')
+        
+        super().closeEvent(event)
 
 
 if __name__ == '__main__':

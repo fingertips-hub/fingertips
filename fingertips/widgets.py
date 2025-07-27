@@ -180,7 +180,7 @@ class AskAIWidget(QtWidgets.QWidget):
         self.spin_icon = qta.icon(
             'fa5s.spinner', color='#ddd', animation=qta.Spin(self.button)
         )
-        self.publish_icon = qta.icon('fa.paper-plane', color='#eee')
+        self.publish_icon = qta.icon('fa5s.paper-plane', color='#eee')
 
         self.enable_copy_icon = qta.icon('ri.file-copy-2-fill', color='#ddd')
         self.disable_copy_icon = qta.icon('ri.file-copy-2-fill', color='#555')

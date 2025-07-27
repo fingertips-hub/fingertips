@@ -950,7 +950,8 @@ class ContentView(QtWidgets.QGraphicsView):
             self.scene.setSceneRect(target_rect)
             if is_at_top_before_update and self.verticalScrollBar().isVisible():
                 self._expect_scroll_to_be_at_top_after_update = True
-                QtCore.QTimer.singleShot(0, self._delayed_scroll_check)
+                # 直接调用而不是使用定时器，避免在对象销毁时的回调警告
+                self._delayed_scroll_check()
             else:
                 self._expect_scroll_to_be_at_top_after_update = False
 

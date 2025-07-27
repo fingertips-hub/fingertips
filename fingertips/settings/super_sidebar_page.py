@@ -32,8 +32,7 @@ class SuperSideBarPage(qfluentwidgets.ScrollArea):
             self.settings_group
         )
         config_model.enable_super_sidebar.valueChanged.connect(
-            lambda: signal_bus.super_sidebar_config_changed.emit(
-                {'enable': config_model.enable_super_sidebar.value})
+            self._on_enable_changed
         )
 
         self.type_card = qfluentwidgets.OptionsSettingCard(
@@ -54,8 +53,7 @@ class SuperSideBarPage(qfluentwidgets.ScrollArea):
             self.settings_group
         )
         config_model.super_sidebar_opacity.valueChanged.connect(
-            lambda: signal_bus.super_sidebar_config_changed.emit(
-                {'opacity': config_model.super_sidebar_opacity.value})
+            self._on_opacity_changed
         )
 
         self.position_card = qfluentwidgets.OptionsSettingCard(
@@ -67,8 +65,7 @@ class SuperSideBarPage(qfluentwidgets.ScrollArea):
             self.settings_group,
         )
         config_model.super_sidebar_position.valueChanged.connect(
-            lambda: signal_bus.super_sidebar_config_changed.emit(
-                {'position': config_model.super_sidebar_position.value})
+            self._on_position_changed
         )
 
         self.plugin_path_card = FolderPathSettingCard(
@@ -105,3 +102,18 @@ class SuperSideBarPage(qfluentwidgets.ScrollArea):
 
         signal_bus.super_sidebar_config_changed.emit(
             {'type': config_model.super_sidebar_type.value})
+    
+    def _on_enable_changed(self):
+        """启用状态变化的回调函数"""
+        signal_bus.super_sidebar_config_changed.emit(
+            {'enable': config_model.enable_super_sidebar.value})
+    
+    def _on_opacity_changed(self):
+        """不透明度变化的回调函数"""
+        signal_bus.super_sidebar_config_changed.emit(
+            {'opacity': config_model.super_sidebar_opacity.value})
+    
+    def _on_position_changed(self):
+        """位置变化的回调函数"""
+        signal_bus.super_sidebar_config_changed.emit(
+            {'position': config_model.super_sidebar_position.value})

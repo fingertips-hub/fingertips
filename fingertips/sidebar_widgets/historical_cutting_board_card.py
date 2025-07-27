@@ -104,7 +104,7 @@ class ClipboardItemWidget(QtWidgets.QWidget):
         
         # 删除按钮
         self.delete_button = QtWidgets.QPushButton()
-        self.delete_button.setIcon(qtawesome.icon('fa.trash', color='#ff5722'))
+        self.delete_button.setIcon(qtawesome.icon('fa5s.trash', color='#ff5722'))
         self.delete_button.setFixedSize(24, 24)
         self.delete_button.setObjectName("deleteButton")
         self.delete_button.setStyleSheet("""
@@ -175,7 +175,7 @@ class HistoricalCuttingBoardCard(SidebarWidget):
     
     name = '历史剪切板'
     category = '生活'
-    icon = 'fa.clipboard'
+    icon = 'fa5s.clipboard'
     description = '记录和管理剪切板历史，支持一键复制和删除'
     
     def __init__(self, parent=None):
@@ -235,7 +235,7 @@ class HistoricalCuttingBoardCard(SidebarWidget):
         
         # 清空按钮
         self.clear_button = QtWidgets.QPushButton()
-        self.clear_button.setIcon(qtawesome.icon('fa.trash', color='#666'))
+        self.clear_button.setIcon(qtawesome.icon('fa5s.trash', color='#666'))
         self.clear_button.setFixedSize(28, 28)
         self.clear_button.setToolTip("清空所有历史")
         self.clear_button.setStyleSheet("""
@@ -547,7 +547,7 @@ class HistoricalCuttingBoardCard(SidebarWidget):
     def show_copy_feedback(self):
         """显示复制成功的反馈"""
         # 临时更改状态标签
-        original_text = self.status_label.text()
+        self._original_status_text = self.status_label.text()
         self.status_label.setText("✅ 已成功复制到剪切板！")
         self.status_label.setStyleSheet("""
             QLabel {
@@ -560,8 +560,13 @@ class HistoricalCuttingBoardCard(SidebarWidget):
         """)
         
         # 2秒后恢复
-        QTimer.singleShot(2000, lambda: (
-            self.status_label.setText(original_text),
+        QTimer.singleShot(2000, self._restore_status_label)
+    
+    def _restore_status_label(self):
+        """恢复状态标签的回调函数"""
+        if hasattr(self, 'status_label') and self.status_label:
+            if hasattr(self, '_original_status_text'):
+                self.status_label.setText(self._original_status_text)
             self.status_label.setStyleSheet("""
                 QLabel {
                     font-size: 12px;
@@ -570,7 +575,6 @@ class HistoricalCuttingBoardCard(SidebarWidget):
                     padding: 4px 0px;
                 }
             """)
-        ))
     
     def delete_item(self, item_id):
         """删除指定的剪切板项目"""
@@ -933,7 +937,7 @@ class HistoricalCuttingBoardCard(SidebarWidget):
                         processed_records.append(processed_record)
                 
                 # 按时间戳排序
-                processed_records.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+                processed_records.sort(key=self._get_timestamp_for_sort, reverse=True)
                 
                 self.clipboard_items = processed_records
                 
@@ -963,6 +967,10 @@ class HistoricalCuttingBoardCard(SidebarWidget):
     def set_config(self, config):
         """设置配置信息"""
         pass
+
+    def _get_timestamp_for_sort(self, record):
+        """获取记录的时间戳用于排序"""
+        return record.get('timestamp', '')
 
 
 if __name__ == '__main__':

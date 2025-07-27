@@ -97,7 +97,7 @@ class TodoItemWidget(QtWidgets.QWidget):
         
         # 删除按钮
         self.delete_button = QtWidgets.QPushButton()
-        self.delete_button.setIcon(qtawesome.icon('fa.trash', color='#ff5722'))
+        self.delete_button.setIcon(qtawesome.icon('fa5s.trash', color='#ff5722'))
         self.delete_button.setFixedSize(28, 28)
         self.delete_button.setStyleSheet("""
             QPushButton {
@@ -204,7 +204,7 @@ class TodoListCard(SidebarWidget):
     
     name = '待办清单'
     category = '生活'
-    icon = 'fa.check-square'
+    icon = 'fa5s.check-square'
     description = '管理你的待办事项，支持增删改查和完成状态管理'
     
     def __init__(self, parent=None):
@@ -253,7 +253,7 @@ class TodoListCard(SidebarWidget):
         input_layout.addWidget(self.input_field, 1)
         
         self.add_button = QtWidgets.QPushButton()
-        self.add_button.setIcon(qtawesome.icon('fa.plus', color='white'))
+        self.add_button.setIcon(qtawesome.icon('fa5s.plus', color='white'))
         self.add_button.setFixedSize(34, 34)
         self.add_button.setStyleSheet("""
             QPushButton {
@@ -363,10 +363,11 @@ class TodoListCard(SidebarWidget):
         """创建待办事项UI组件"""
         todo_widget = TodoItemWidget(todo_data['text'], todo_data['completed'])
         
-        # 连接信号
-        todo_widget.item_toggled.connect(lambda checked, data=todo_data: self.on_todo_toggled(data, checked))
-        todo_widget.item_deleted.connect(lambda data=todo_data: self.delete_todo(data))
-        todo_widget.item_edited.connect(lambda text, data=todo_data: self.on_todo_edited(data, text))
+        # 连接信号 - 使用functools.partial替代lambda避免回调警告
+        from functools import partial
+        todo_widget.item_toggled.connect(partial(self._on_todo_item_toggled, todo_data))
+        todo_widget.item_deleted.connect(partial(self.delete_todo, todo_data))
+        todo_widget.item_edited.connect(partial(self._on_todo_item_edited, todo_data))
         
         # 存储组件引用
         todo_data['widget'] = todo_widget
@@ -376,6 +377,14 @@ class TodoListCard(SidebarWidget):
         
         # 应用过滤
         self.apply_filter()
+    
+    def _on_todo_item_toggled(self, todo_data, checked):
+        """处理待办事项切换的适配器方法"""
+        self.on_todo_toggled(todo_data, checked)
+    
+    def _on_todo_item_edited(self, todo_data, text):
+        """处理待办事项编辑的适配器方法"""
+        self.on_todo_edited(todo_data, text)
         
     def on_todo_toggled(self, todo_data, completed):
         """处理待办事项完成状态变化"""

@@ -1,4 +1,10 @@
-from PySide2 import QtWidgets, QtCore
+from PySide2 import QtWidgets, QtCore, QtGui
+import requests
+import qtawesome
+
+request_headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+}
 
 
 class RenameDialog(QtWidgets.QDialog):
@@ -229,3 +235,234 @@ class ConfirmDialog(QtWidgets.QDialog):
         """静态方法，显示确认对话框并返回用户选择"""
         dialog = ConfirmDialog(title, message, parent)
         return dialog.exec_() == QtWidgets.QDialog.Accepted
+
+
+class SoftwareEditDialog(QtWidgets.QDialog):
+    """软件项目编辑对话框"""
+
+    def __init__(self, name="", path="", icon_path="", item_type="file", parent=None):
+        super().__init__(parent)
+        self.name = name
+        self.path = path
+        self.icon_path = icon_path
+        self.item_type = item_type
+        self.selected_icon = None
+        self.setup_ui()
+
+    def setup_ui(self):
+        """设置UI界面"""
+        self.setWindowTitle("编辑软件信息")
+        self.setFixedSize(400, 350)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: white;
+            }
+            QLabel {
+                font-size: 12px;
+                color: #333;
+                font-weight: bold;
+            }
+            QLineEdit {
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 8px;
+                font-size: 12px;
+            }
+            QLineEdit:focus {
+                border-color: #007bff;
+            }
+            QPushButton {
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #0056b3;
+            }
+            QPushButton:pressed {
+                background-color: #004085;
+            }
+            QPushButton#cancelBtn {
+                background-color: #6c757d;
+            }
+            QPushButton#cancelBtn:hover {
+                background-color: #545b62;
+            }
+            QPushButton#browseBtn {
+                background-color: #28a745;
+                padding: 6px 12px;
+            }
+            QPushButton#browseBtn:hover {
+                background-color: #218838;
+            }
+            QPushButton#iconBtn {
+                background-color: #17a2b8;
+                padding: 6px 12px;
+            }
+            QPushButton#iconBtn:hover {
+                background-color: #138496;
+            }
+        """)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        # 标题
+        title_label = QtWidgets.QLabel("编辑软件信息")
+        title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333;")
+        layout.addWidget(title_label)
+
+        # 图标预览
+        icon_layout = QtWidgets.QHBoxLayout()
+        icon_layout.setSpacing(10)
+
+        icon_preview_label = QtWidgets.QLabel("图标:")
+        icon_layout.addWidget(icon_preview_label)
+
+        self.icon_preview = QtWidgets.QLabel()
+        self.icon_preview.setFixedSize(40, 40)
+        self.icon_preview.setStyleSheet("border: 1px solid #ddd; border-radius: 4px;")
+        self.icon_preview.setAlignment(QtCore.Qt.AlignCenter)
+        self.load_icon_preview()
+        icon_layout.addWidget(self.icon_preview)
+
+        choose_icon_btn = QtWidgets.QPushButton("选择图标")
+        choose_icon_btn.setObjectName("iconBtn")
+        choose_icon_btn.clicked.connect(self.choose_icon)
+        icon_layout.addWidget(choose_icon_btn)
+
+        icon_layout.addStretch()
+        layout.addLayout(icon_layout)
+
+        # 名称输入
+        name_label = QtWidgets.QLabel("名称:")
+        layout.addWidget(name_label)
+
+        self.name_input = QtWidgets.QLineEdit(self.name)
+        layout.addWidget(self.name_input)
+
+        # 路径输入
+        path_label = QtWidgets.QLabel("路径:" if self.item_type == "file" else "网址:")
+        layout.addWidget(path_label)
+
+        path_layout = QtWidgets.QHBoxLayout()
+        path_layout.setSpacing(8)
+
+        self.path_input = QtWidgets.QLineEdit(self.path)
+        path_layout.addWidget(self.path_input, 1)
+
+        if self.item_type == "file":
+            browse_btn = QtWidgets.QPushButton("浏览")
+            browse_btn.setObjectName("browseBtn")
+            browse_btn.clicked.connect(self.browse_file)
+            path_layout.addWidget(browse_btn)
+
+        layout.addLayout(path_layout)
+
+        # 类型显示
+        type_label = QtWidgets.QLabel(f"类型: {'文件' if self.item_type == 'file' else '网站'}")
+        type_label.setStyleSheet("color: #666; font-weight: normal;")
+        layout.addWidget(type_label)
+
+        layout.addStretch()
+
+        # 按钮区域
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addStretch()
+
+        cancel_btn = QtWidgets.QPushButton("取消")
+        cancel_btn.setObjectName("cancelBtn")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+
+        ok_btn = QtWidgets.QPushButton("确定")
+        ok_btn.clicked.connect(self.accept)
+        button_layout.addWidget(ok_btn)
+
+        layout.addLayout(button_layout)
+
+    def load_icon_preview(self):
+        """加载图标预览"""
+        try:
+            if self.item_type == "website" and self.icon_path:
+                # 网站图标
+                icon = self._load_icon_from_http(self.icon_path)
+            elif self.item_type == "file" and self.icon_path:
+                # 文件图标
+                icon = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(self.icon_path))
+            else:
+                # 默认图标
+                icon = qtawesome.icon('fa5s.question')
+
+            pixmap = icon.pixmap(40, 40)
+            self.icon_preview.setPixmap(pixmap)
+        except:
+            # 加载失败时使用默认图标
+            icon = qtawesome.icon('fa5s.question')
+            pixmap = icon.pixmap(40, 40)
+            self.icon_preview.setPixmap(pixmap)
+
+    def _load_icon_from_http(self, url):
+        """从网络加载图标"""
+        if not url:
+            return qtawesome.icon('msc.browser')
+        try:
+            response = requests.get(url, headers=request_headers, timeout=3)
+            response.raise_for_status()
+            data = QtCore.QByteArray(response.content)
+            pixmap = QtGui.QPixmap()
+            pixmap.loadFromData(data)
+            return QtGui.QIcon(pixmap)
+        except:
+            return qtawesome.icon('fa5s.browser')
+
+    def choose_icon(self):
+        """选择图标"""
+        if self.item_type == "file":
+            file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self, "选择图标文件", "",
+                "图标文件 (*.ico *.png *.jpg *.jpeg *.bmp *.gif);;所有文件 (*.*)"
+            )
+            if file_path:
+                self.selected_icon = file_path
+                try:
+                    pixmap = QtGui.QPixmap(file_path).scaled(40, 40, QtCore.Qt.KeepAspectRatio,
+                                                             QtCore.Qt.SmoothTransformation)
+                    self.icon_preview.setPixmap(pixmap)
+                except:
+                    QtWidgets.QMessageBox.warning(self, "错误", "无法加载选中的图标文件")
+        else:
+            # 网站类型，让用户输入图标URL
+            url, ok = QtWidgets.QInputDialog.getText(self, "输入图标URL", "请输入图标的网址:")
+            if ok and url.strip():
+                self.selected_icon = url.strip()
+                try:
+                    icon = self._load_icon_from_http(url.strip())
+                    pixmap = icon.pixmap(40, 40)
+                    self.icon_preview.setPixmap(pixmap)
+                except:
+                    QtWidgets.QMessageBox.warning(self, "错误", "无法加载图标URL")
+
+    def browse_file(self):
+        """浏览文件"""
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "选择程序文件", "",
+            "可执行文件 (*.exe);;快捷方式 (*.lnk);;所有文件 (*.*)"
+        )
+        if file_path:
+            self.path_input.setText(file_path)
+
+    def get_data(self):
+        """获取编辑后的数据"""
+        return {
+            'name': self.name_input.text().strip(),
+            'path': self.path_input.text().strip(),
+            'icon': self.selected_icon or self.icon_path,
+            'type': self.item_type
+        }
+

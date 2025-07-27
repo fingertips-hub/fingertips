@@ -376,7 +376,7 @@ class HistoryItemWidget(QtWidgets.QWidget):
         
         # 删除按钮
         delete_btn = QtWidgets.QPushButton()
-        delete_btn.setIcon(qtawesome.icon('fa.times', color='#999'))
+        delete_btn.setIcon(qtawesome.icon('fa5s.times', color='#999'))
         delete_btn.setFixedSize(20, 20)
         delete_btn.setStyleSheet("""
             QPushButton {
@@ -544,7 +544,7 @@ class OptionsEditDialog(QtWidgets.QDialog):
             option_layout.addWidget(option_label, 1)
             
             delete_btn = QtWidgets.QPushButton()
-            delete_btn.setIcon(qtawesome.icon('fa.trash', color='#dc3545'))
+            delete_btn.setIcon(qtawesome.icon('fa5s.trash', color='#dc3545'))
             delete_btn.setFixedSize(24, 24)
             delete_btn.setStyleSheet("""
                 QPushButton {
@@ -556,7 +556,9 @@ class OptionsEditDialog(QtWidgets.QDialog):
                     background-color: #dc3545;
                 }
             """)
-            delete_btn.clicked.connect(lambda checked=None, opt=option: self.remove_option(opt))
+            # 使用functools.partial替代lambda避免回调警告
+            from functools import partial
+            delete_btn.clicked.connect(partial(self.remove_option, option))
             option_layout.addWidget(delete_btn)
             
             self.options_layout.addWidget(option_widget)
@@ -574,7 +576,7 @@ class RandomDecisionCard(SidebarWidget):
     
     name = '随机决策器'
     category = '生活'
-    icon = 'fa.random'
+    icon = 'fa5s.random'
     description = '帮助你做选择的小工具，支持自定义选项和滚动选择效果'
     
     def __init__(self, parent=None):
@@ -622,7 +624,7 @@ class RandomDecisionCard(SidebarWidget):
         
         # 编辑选项按钮
         edit_btn = QtWidgets.QPushButton()
-        edit_btn.setIcon(qtawesome.icon('fa.cog', color='#666'))
+        edit_btn.setIcon(qtawesome.icon('fa5s.cog', color='#666'))
         edit_btn.setFixedSize(32, 32)
         edit_btn.setToolTip("编辑选项")
         edit_btn.setStyleSheet("""
@@ -719,7 +721,7 @@ class RandomDecisionCard(SidebarWidget):
         
         # 清空历史按钮
         clear_history_btn = QtWidgets.QPushButton()
-        clear_history_btn.setIcon(qtawesome.icon('fa.trash', color='#999'))
+        clear_history_btn.setIcon(qtawesome.icon('fa5s.trash', color='#999'))
         clear_history_btn.setFixedSize(24, 24)
         clear_history_btn.setToolTip("清空历史")
         clear_history_btn.setStyleSheet("""
@@ -838,7 +840,9 @@ class RandomDecisionCard(SidebarWidget):
                 record["result"], 
                 record["timestamp"]
             )
-            history_item.delete_requested.connect(lambda idx=i: self.remove_history_item(idx))
+            # 使用functools.partial替代lambda避免回调警告
+            from functools import partial
+            history_item.delete_requested.connect(partial(self.remove_history_item, i))
             self.history_layout.insertWidget(i, history_item)
             
     def remove_history_item(self, index):
@@ -889,8 +893,8 @@ class RandomDecisionCard(SidebarWidget):
                     QtWidgets.QApplication.processEvents()
                 
                 # 多次延迟刷新，确保完全更新
-                QTimer.singleShot(50, lambda: self._delayed_refresh())
-                QTimer.singleShot(100, lambda: self._delayed_refresh())
+                QTimer.singleShot(50, self._delayed_refresh)
+                QTimer.singleShot(100, self._delayed_refresh)
                 
                 # 保存配置
                 self.save_config_signal.emit()

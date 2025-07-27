@@ -87,7 +87,7 @@ class PomodoroCard(SidebarWidget):
     
     name = '番茄钟'
     category = '生活'
-    icon = 'fa.clock-o'
+    icon = 'mdi.account-clock-outline'
     description = '经典的番茄工作法计时器，25分钟工作 + 5分钟休息'
     
     def __init__(self, parent=None):
@@ -228,7 +228,7 @@ class PomodoroCard(SidebarWidget):
         # 开始/暂停按钮
         self.play_pause_button = QtWidgets.QPushButton()
         self.play_pause_button.setFixedSize(60, 60)
-        self.play_pause_button.setIcon(qtawesome.icon('fa.play', color='white'))
+        self.play_pause_button.setIcon(qtawesome.icon('fa5s.play', color='white'))
         self.play_pause_button.setIconSize(QtCore.QSize(24, 24))
         self.play_pause_button.setStyleSheet("""
             QPushButton {
@@ -253,7 +253,7 @@ class PomodoroCard(SidebarWidget):
         # 重置按钮
         self.reset_button = QtWidgets.QPushButton()
         self.reset_button.setFixedSize(50, 50)
-        self.reset_button.setIcon(qtawesome.icon('fa.refresh', color='white'))
+        self.reset_button.setIcon(qtawesome.icon('ei.refresh', color='white'))
         self.reset_button.setIconSize(QtCore.QSize(20, 20))
         self.reset_button.setStyleSheet("""
             QPushButton {
@@ -324,9 +324,9 @@ class PomodoroCard(SidebarWidget):
         
         # 更新按钮状态
         if self.is_running:
-            self.play_pause_button.setIcon(qtawesome.icon('fa.pause', color='white'))
+            self.play_pause_button.setIcon(qtawesome.icon('fa5s.pause', color='white'))
         else:
-            self.play_pause_button.setIcon(qtawesome.icon('fa.play', color='white'))
+            self.play_pause_button.setIcon(qtawesome.icon('fa5s.play', color='white'))
     
     def toggle_timer(self):
         """切换定时器状态"""
@@ -339,7 +339,7 @@ class PomodoroCard(SidebarWidget):
             show_notification(
                 title="⏸️ 计时器已暂停",
                 message=f"{mode_text}时间已暂停，点击继续按钮恢复计时。",
-                icon_name="fa.pause-circle",
+                icon_name="fa5s.pause-circle",
                 auto_close_time=3000  # 3秒后自动关闭
             )
         else:
@@ -352,7 +352,7 @@ class PomodoroCard(SidebarWidget):
             show_notification(
                 title=f"🍅 {mode_text}时间开始！",
                 message=f"{mode_text}时间已开始，剩余 {minutes} 分钟。保持专注！",
-                icon_name="fa.play-circle",
+                icon_name="fa5s.play-circle",
                 auto_close_time=3000  # 3秒后自动关闭
             )
         
@@ -370,7 +370,7 @@ class PomodoroCard(SidebarWidget):
         show_notification(
             title="🔄 番茄钟已重置",
             message=f"计时器已重置为 {self.work_duration//60} 分钟工作时间，准备开始新的番茄钟！",
-            icon_name="fa.refresh",
+            icon_name="ei.refresh",
             auto_close_time=3000  # 3秒后自动关闭
         )
         
@@ -398,7 +398,7 @@ class PomodoroCard(SidebarWidget):
             show_notification(
                 title="🍅 工作时间结束！",
                 message=f"恭喜完成第 {self.completed_cycles} 个番茄钟！现在开始 {self.break_duration//60} 分钟休息时间。",
-                icon_name="fa.check-circle",
+                icon_name="fa5s.check-circle",
                 auto_close_time=8000  # 8秒后自动关闭
             )
         else:
@@ -410,7 +410,7 @@ class PomodoroCard(SidebarWidget):
             show_notification(
                 title="⏰ 休息时间结束！",
                 message=f"休息时间结束，准备开始新的 {self.work_duration//60} 分钟工作时间。保持专注！",
-                icon_name="fa.play-circle",
+                icon_name="fa5s.play-circle",
                 auto_close_time=8000  # 8秒后自动关闭
             )
         

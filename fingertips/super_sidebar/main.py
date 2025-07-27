@@ -1,5 +1,6 @@
 import sys
 import uuid
+from functools import partial
 
 from PySide2.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout,  QPushButton, QHBoxLayout, QGraphicsOpacityEffect
 from PySide2.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QObject, QEasingCurve, \
@@ -370,7 +371,7 @@ class SuperSidebar(QMainWindow):
         top_layout = QHBoxLayout()
 
         # 创建Pin按钮
-        lock_icon = qtawesome.icon('fa.unlock', color='#DDD')
+        lock_icon = qtawesome.icon('fa5s.unlock', color='#DDD')
         self.pin_button = QPushButton(lock_icon, "")  # 使用emoji作为图标
         self.pin_button.setIconSize(QSize(24, 24))
         self.pin_button.setChecked(False)
@@ -399,7 +400,7 @@ class SuperSidebar(QMainWindow):
         self.pin_button.setStyleSheet(button_style)
         self.pin_button.clicked.connect(self.toggle_pin)
 
-        edit_icon = qtawesome.icon('fa.edit', color='#DDD')
+        edit_icon = qtawesome.icon('fa5s.edit', color='#DDD')
         self.edit_button = QPushButton(edit_icon, "")
         self.edit_button.setIconSize(QSize(24, 24))
         self.edit_button.setCheckable(True)
@@ -407,7 +408,7 @@ class SuperSidebar(QMainWindow):
         self.edit_button.setStyleSheet(button_style)
         self.edit_button.clicked.connect(self.toggle_edit_mode)
 
-        menu_icon = qtawesome.icon('fa.bars', color='#DDD')
+        menu_icon = qtawesome.icon('fa5s.bars', color='#DDD')
         self.menu_button = MenuButton(menu_icon, '')
         self.menu_button.setIconSize(QSize(24, 24))
         self.menu_button.setStyleSheet(button_style)
@@ -461,13 +462,17 @@ class SuperSidebar(QMainWindow):
                 icon = getattr(widget, 'icon', None)
                 if icon:
                     if not isinstance(icon, QIcon):
-                        icon = qtawesome.icon(icon)
+                        try:
+                            icon = qtawesome.icon(icon)
+                        except:
+                            print(icon)
 
                 action = qfluentwidgets.Action(
                         getattr(widget, 'name', '未命名'),
-                        self,
-                        triggered=lambda w=widget: self.content_view.add_widget(widget=w)
+                        self
                     )
+                # 使用functools.partial替代lambda避免回调警告
+                action.triggered.connect(partial(self.content_view.add_widget, widget=widget))
                 action.setToolTip(getattr(widget, 'description', ''))
                 category_menu.addAction(action)
 
@@ -479,24 +484,24 @@ class SuperSidebar(QMainWindow):
 
         self.content_view.set_edit_mode(self.is_edit_mode)
         if self.is_edit_mode:
-            self.edit_button.setIcon(qtawesome.icon('fa.check', color='#EEE'))
+            self.edit_button.setIcon(qtawesome.icon('fa5s.check', color='#EEE'))
             self.edit_button.setToolTip("退出编辑模式")
             self._set_hide_button(self.menu_button, False)
             # 进入编辑模式时自动固定面板
             if not self.is_pinned:
                 self.is_pinned = True
                 self.pin_button.setChecked(True)
-                self.pin_button.setIcon(qtawesome.icon('fa.lock', color='#EEE'))
+                self.pin_button.setIcon(qtawesome.icon('fa5s.lock', color='#EEE'))
                 self.pin_button.setToolTip("取消固定面板")
         else:
-            self.edit_button.setIcon(qtawesome.icon('fa.edit', color='#DDD'))
+            self.edit_button.setIcon(qtawesome.icon('fa5s.edit', color='#DDD'))
             self.edit_button.setToolTip("进入编辑模式")
             self._set_hide_button(self.menu_button, True)
             # 退出编辑模式时自动取消固定面板
             if self.is_pinned:
                 self.is_pinned = False
                 self.pin_button.setChecked(False)
-                self.pin_button.setIcon(qtawesome.icon('fa.unlock', color='#DDD'))
+                self.pin_button.setIcon(qtawesome.icon('fa5s.unlock', color='#DDD'))
                 self.pin_button.setToolTip("固定面板")
             # 退出编辑模式时重置光标和拖拽状态
             self.setCursor(Qt.ArrowCursor)
@@ -516,10 +521,10 @@ class SuperSidebar(QMainWindow):
 
         # 更新按钮提示
         if self.is_pinned:
-            self.pin_button.setIcon(qtawesome.icon('fa.lock', color='#EEE'))
+            self.pin_button.setIcon(qtawesome.icon('fa5s.lock', color='#EEE'))
             self.pin_button.setToolTip("取消固定面板")
         else:
-            self.pin_button.setIcon(qtawesome.icon('fa.unlock', color='#DDD'))
+            self.pin_button.setIcon(qtawesome.icon('fa5s.unlock', color='#DDD'))
             self.pin_button.setToolTip("固定面板")
             # 取消固定时重置光标和拖拽状态
             self.setCursor(Qt.ArrowCursor)
@@ -701,8 +706,8 @@ class SuperSidebar(QMainWindow):
 
         self.animation.finished.connect(self.on_show_finished)
 
-        # 立即开始动画
-        QTimer.singleShot(0, self.animation.start)
+        # 直接开始动画，避免在对象销毁时的回调警告
+        self.animation.start()
 
     def hide_panel(self):
         if not self.is_visible or self.is_animating or self.is_pinned:  # 如果已固定，不隐藏
@@ -870,6 +875,24 @@ class SuperSidebar(QMainWindow):
         
     def closeEvent(self, event):
         """窗口关闭事件，清理资源"""
+        # 停止所有定时器
+        if hasattr(self, 'detection_timer'):
+            self.detection_timer.stop()
+        if hasattr(self, 'screen_update_timer'):
+            self.screen_update_timer.stop()
+        if hasattr(self, 'repaint_timer'):
+            self.repaint_timer.stop()
+        if hasattr(self, 'edge_hover_timer'):
+            self.edge_hover_timer.stop()
+        
+        # 停止动画
+        if hasattr(self, 'animation'):
+            self.animation.stop()
+        
+        # 移除全局事件过滤器
+        if hasattr(self, 'mouse_detector'):
+            QApplication.instance().removeEventFilter(self.mouse_detector)
+        
         # 清理dialog父窗口
         if hasattr(self, 'dialog_parent') and self.dialog_parent is not None:
             self.dialog_parent.close()

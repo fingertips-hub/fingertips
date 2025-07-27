@@ -15,7 +15,7 @@ class NotificationWidget(QtWidgets.QWidget):
     closing_started = QtCore.Signal()  # 开始关闭信号
     size_changed = QtCore.Signal()  # 尺寸变化完成信号
     
-    def __init__(self, title="通知", message="", icon_name="fa.info-circle", 
+    def __init__(self, title="通知", message="", icon_name="fa5s.info-circle",
                  auto_close_time=5000, parent=None):
         super().__init__(parent)
         
@@ -119,7 +119,7 @@ class NotificationWidget(QtWidgets.QWidget):
         self.close_button = QtWidgets.QPushButton()
         self.close_button.setFixedSize(20, 20)
         self.close_button.setObjectName("notification_close_button")
-        close_icon = qta.icon('fa.times', color='#666666')
+        close_icon = qta.icon('fa5s.times', color='#666666')
         self.close_button.setIcon(close_icon)
         self.close_button.setIconSize(QtCore.QSize(12, 12))
         self.close_button.clicked.connect(self.close_notification)
@@ -378,10 +378,15 @@ class NotificationWidget(QtWidgets.QWidget):
         self.expand_animation.start()
         
         # 延迟显示详细信息，让动画先进行一部分，避免文字抖动
-        QtCore.QTimer.singleShot(150, lambda: self.message_label.setVisible(True))
+        QtCore.QTimer.singleShot(150, self._show_message_label)
         
         # 延迟发送尺寸变化信号，让当前通知的动画先开始
         QtCore.QTimer.singleShot(50, self.size_changed.emit)
+    
+    def _show_message_label(self):
+        """显示消息标签的回调函数"""
+        if hasattr(self, 'message_label') and self.message_label:
+            self.message_label.setVisible(True)
         
     def _on_expand_finished(self):
         """展开动画完成"""
@@ -557,7 +562,7 @@ class NotificationManager:
         self.max_notifications = 5
         self.notification_spacing = 10
         
-    def show_notification(self, title, message="", icon_name="fa.info-circle", 
+    def show_notification(self, title, message="", icon_name="fa5s.info-circle",
                          auto_close_time=5000):
         """显示通知"""
         # 移除过多的通知
@@ -573,9 +578,10 @@ class NotificationManager:
             auto_close_time=auto_close_time
         )
         
-        # 连接信号
+        # 连接信号 - 使用functools.partial替代lambda避免回调警告
+        from functools import partial
         notification.notification_closed.connect(
-            lambda: self._remove_notification(notification)
+            partial(self._remove_notification, notification)
         )
         # 连接尺寸变化信号以触发位置调整
         notification.size_changed.connect(self._adjust_notifications_position)
@@ -668,7 +674,7 @@ class NotificationManager:
 notification_manager = NotificationManager()
 
 
-def show_notification(title, message="", icon_name="fa.info-circle", auto_close_time=5000):
+def show_notification(title, message="", icon_name="fa5s.info-circle", auto_close_time=5000):
     """便捷函数：显示通知"""
     return notification_manager.show_notification(title, message, icon_name, auto_close_time)
 
@@ -682,21 +688,21 @@ if __name__ == '__main__':
     show_notification(
         title="第一个通知 - 点击测试展开",
         message="这是第一个通知的详细信息。点击可以展开查看更多内容。测试展开时其他通知的位置调整是否流畅。",
-        icon_name="fa.info-circle",
+        icon_name="fa5s.info-circle",
         auto_close_time=0  # 不自动关闭，方便测试
     )
 
     show_notification(
         title="第二个通知 - 观察位置变化",
         message="这是第二个通知的详细信息。观察当第一个通知展开时，这个通知是否平滑下移。",
-        icon_name="fa.warning",
+        icon_name="fa5s.warning",
         auto_close_time=0
     )
 
     show_notification(
         title="第三个通知 - 检查动画同步",
         message="这是第三个通知的详细信息。检查所有通知的动画是否同步，无抖动。",
-        icon_name="fa.check-circle",
+        icon_name="fa5s.check-circle",
         auto_close_time=0
     )
     

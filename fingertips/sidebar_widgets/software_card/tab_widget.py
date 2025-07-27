@@ -41,7 +41,8 @@ class TabButton(QtWidgets.QPushButton):
             self.close_btn = QtWidgets.QPushButton("×", self)
             self.close_btn.setFixedSize(16, 16)
             self.close_btn.setCursor(QtCore.Qt.PointingHandCursor)
-            self.close_btn.clicked.connect(lambda: self.close_requested.emit(self))
+            # 使用成员函数替代lambda避免回调警告
+            self.close_btn.clicked.connect(self._emit_close_requested)
             self.close_btn.setStyleSheet("""
                 QPushButton {
                     border: none;
@@ -182,6 +183,10 @@ class TabButton(QtWidgets.QPushButton):
         if self.closable and hasattr(self, 'close_btn'):
             # 将关闭按钮放在右上角
             self.close_btn.move(self.width() - 20, 4)
+    
+    def _emit_close_requested(self):
+        """发射关闭请求信号的回调函数"""
+        self.close_requested.emit(self)
 
 
 class CustomTabBar(QtWidgets.QWidget):
@@ -243,7 +248,7 @@ class CustomTabBar(QtWidgets.QWidget):
         # 创建添加按钮（可选）
         if self.show_add_button:
             self.add_button = QtWidgets.QPushButton('')
-            self.add_button.setIcon(qtawesome.icon('fa.plus', color='#555'))
+            self.add_button.setIcon(qtawesome.icon('fa5s.plus', color='#555'))
             self.add_button.setFixedSize(30, 30)
             self.add_button.setToolTip("添加新标签页")
             self.add_button.setCursor(QtCore.Qt.PointingHandCursor)
@@ -336,7 +341,9 @@ class CustomTabBar(QtWidgets.QWidget):
     def add_tab(self, text, closable=True):
         """添加标签页 - 核心添加算法"""
         tab_button = TabButton(text, closable)
-        tab_button.clicked.connect(lambda: self.on_tab_clicked(tab_button))
+        # 使用functools.partial替代lambda避免回调警告
+        from functools import partial
+        tab_button.clicked.connect(partial(self.on_tab_clicked, tab_button))
         tab_button.close_requested.connect(self.on_tab_close_requested)
         tab_button.rename_requested.connect(self.on_tab_rename_requested)
         

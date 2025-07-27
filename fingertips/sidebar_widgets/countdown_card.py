@@ -90,7 +90,7 @@ class CountdownItemWidget(QtWidgets.QWidget):
         
         # 编辑按钮
         self.edit_button = QtWidgets.QPushButton()
-        self.edit_button.setIcon(qtawesome.icon('fa.edit', color='#888'))
+        self.edit_button.setIcon(qtawesome.icon('fa5s.edit', color='#888'))
         self.edit_button.setFixedSize(28, 28)
         self.edit_button.setStyleSheet("""
             QPushButton {
@@ -114,7 +114,7 @@ class CountdownItemWidget(QtWidgets.QWidget):
         
         # 删除按钮
         self.delete_button = QtWidgets.QPushButton()
-        self.delete_button.setIcon(qtawesome.icon('fa.trash', color='#ff5722'))
+        self.delete_button.setIcon(qtawesome.icon('fa5s.trash', color='#ff5722'))
         self.delete_button.setFixedSize(28, 28)
         self.delete_button.setStyleSheet("""
             QPushButton {
@@ -654,7 +654,7 @@ class CountdownCard(SidebarWidget):
     
     name = '倒计时'
     category = '时间'
-    icon = 'fa.clock-o'
+    icon = 'mdi.account-clock-outline'
     description = '创建和管理倒计时，支持进度条显示和多项目管理'
     
     def __init__(self, parent=None):
@@ -703,7 +703,7 @@ class CountdownCard(SidebarWidget):
         
         # 添加按钮
         add_btn = QtWidgets.QPushButton()
-        add_btn.setIcon(qtawesome.icon('fa.plus', color='white'))
+        add_btn.setIcon(qtawesome.icon('fa5s.plus', color='white'))
         add_btn.setFixedSize(30, 30)
         add_btn.setStyleSheet("""
             QPushButton {

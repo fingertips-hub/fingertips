@@ -7,7 +7,7 @@ import qtawesome
 from bs4 import BeautifulSoup
 
 from fingertips.utils import get_exe_path
-from fingertips.sidebar_widgets.software_card.widgets import ConfirmDialog
+from fingertips.sidebar_widgets.software_card.widgets import ConfirmDialog, SoftwareEditDialog
 
 request_headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -17,6 +17,7 @@ request_headers = {
 class SoftwareItemWidget(QtWidgets.QWidget):
     """自定义软件项小部件"""
     item_renamed = QtCore.Signal()
+    item_edit_requested = QtCore.Signal(object)  # 新增信号，传递widget对象
 
     def __init__(self, icon, name, parent=None):
         super().__init__(parent)
@@ -26,12 +27,17 @@ class SoftwareItemWidget(QtWidgets.QWidget):
 
     def _init_ui(self, icon, name):
         self.setMaximumSize(80, 80)
+        
+        # 禁用默认右键菜单
+        self.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
 
         self.name_label = QtWidgets.QLabel(name)
         self.name_label.setFixedHeight(28)
         self.name_label.setAlignment(QtCore.Qt.AlignCenter)
         self.name_label.setWordWrap(True)
         self.name_label.setStyleSheet('margin: 0 2px;')
+        # 禁用标签的右键菜单
+        self.name_label.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
 
         # 创建编辑器（初始时隐藏）
         self.name_editor = QtWidgets.QLineEdit(name)
@@ -39,14 +45,26 @@ class SoftwareItemWidget(QtWidgets.QWidget):
         self.name_editor.setAlignment(QtCore.Qt.AlignCenter)
         self.name_editor.setStyleSheet('margin: 0 2px; border: 1px solid #007ACC; border-radius: 2px;')
         self.name_editor.hide()
+        # 禁用编辑器的默认右键菜单
+        self.name_editor.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         
         # 连接编辑器事件
         self.name_editor.returnPressed.connect(self._finish_edit)
         self.name_editor.editingFinished.connect(self._on_editing_finished)
+        
+        # 重写编辑器的鼠标右键事件，防止默认菜单
+        def editor_mouse_press(event):
+            if event.button() == QtCore.Qt.RightButton:
+                event.accept()
+                return
+            QtWidgets.QLineEdit.mousePressEvent(self.name_editor, event)
+        self.name_editor.mousePressEvent = editor_mouse_press
 
         self.icon_label = QtWidgets.QLabel()
         self.icon_label.setAlignment(QtCore.Qt.AlignCenter)
         self.icon_label.setFixedSize(40, 40)
+        # 禁用图标的右键菜单
+        self.icon_label.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         pixmap = icon.pixmap(40, 40).scaled(
             40, 40, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
         self.icon_label.setPixmap(pixmap)
@@ -61,9 +79,25 @@ class SoftwareItemWidget(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         """处理鼠标点击事件"""
-        if event.button() == QtCore.Qt.RightButton and not self._edit_mode:
-            self._start_edit()
+        if event.button() == QtCore.Qt.RightButton:
+            # 发出编辑请求信号，让父组件处理
+            self.item_edit_requested.emit(self)
+            event.accept()  # 接受事件，阻止进一步传播
+            return
+        elif event.button() == QtCore.Qt.LeftButton and event.modifiers() == QtCore.Qt.NoModifier:
+            # 左键双击或者特殊组合键可以进入快速编辑模式（仅编辑名称）
+            # 这里先正常处理左键点击
+            pass
+        # 对于其他鼠标按钮，正常处理
         super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        """处理双击事件 - 快速编辑名称"""
+        if event.button() == QtCore.Qt.LeftButton:
+            self._start_edit()
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
 
     def _start_edit(self):
         """开始编辑模式"""
@@ -113,10 +147,14 @@ class SoftwareListWidget(QtWidgets.QListWidget):
     item_added = QtCore.Signal()
     item_removed = QtCore.Signal()
     item_renamed = QtCore.Signal()
+    item_updated = QtCore.Signal()  # 新增信号，当项目信息更新时发出
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        # 禁用默认右键菜单
+        self.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
+        
         self.setFlow(QtWidgets.QListView.LeftToRight)
         self.setWrapping(True)
         self.setResizeMode(QtWidgets.QListView.Adjust)
@@ -172,6 +210,118 @@ class SoftwareListWidget(QtWidgets.QListWidget):
         ''')
 
         self.setAcceptDrops(True)
+
+    def mousePressEvent(self, event):
+        """处理鼠标点击事件"""
+        if event.button() == QtCore.Qt.RightButton:
+            # 检查是否点击在项目上
+            item = self.itemAt(event.pos())
+            if item:
+                # 获取项目的widget并触发其右键处理
+                item_widget = self.itemWidget(item)
+                if item_widget:
+                    # 创建一个相对于item_widget的事件
+                    widget_pos = item_widget.mapFromGlobal(event.globalPos())
+                    widget_event = QtGui.QMouseEvent(
+                        event.type(), 
+                        widget_pos, 
+                        event.globalPos(), 
+                        event.button(), 
+                        event.buttons(), 
+                        event.modifiers()
+                    )
+                    item_widget.mousePressEvent(widget_event)
+            event.accept()  # 无论如何都要接受事件，防止默认菜单
+            return
+        # 对于其他鼠标按钮，正常处理
+        super().mousePressEvent(event)
+
+    def handle_edit_request(self, item_widget):
+        """处理编辑请求"""
+        # 找到对应的 QListWidgetItem
+        item = None
+        for i in range(self.count()):
+            if self.itemWidget(self.item(i)) == item_widget:
+                item = self.item(i)
+                break
+                
+        if not item:
+            return
+            
+        # 获取当前项目信息
+        current_name = item_widget.get_display_name()
+        current_path = getattr(item, 'path', '')
+        current_icon = getattr(item, 'icon', '')
+        current_type = getattr(item, 'type', 'file')
+        
+        # 创建并显示编辑对话框
+        dialog = SoftwareEditDialog(
+            name=current_name,
+            path=current_path,
+            icon_path=current_icon,
+            item_type=current_type,
+            parent=None
+        )
+        print(dialog)
+        
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            # 获取编辑后的数据
+            data = dialog.get_data()
+            
+            # 验证数据
+            if not data['name'].strip():
+                QtWidgets.QMessageBox.warning(self, "错误", "名称不能为空")
+                return
+                
+            if not data['path'].strip():
+                QtWidgets.QMessageBox.warning(self, "错误", "路径不能为空")
+                return
+            
+            # 更新项目信息
+            self.update_item(item, item_widget, data)
+            
+    def update_item(self, item, item_widget, data):
+        """更新项目信息"""
+        try:
+            # 更新显示名称
+            item_widget.set_display_name(data['name'])
+            
+            # 更新路径和类型
+            item.path = data['path']
+            item.type = data['type']
+            item.icon = data['icon']
+            
+            # 更新图标
+            if data['type'] == 'website':
+                if data['icon']:
+                    icon = self._load_icon_from_http(data['icon'])
+                else:
+                    icon = qtawesome.icon('fa5s.browser')
+            else:
+                if data['icon'] and os.path.exists(data['icon']):
+                    if data['icon'].lower().endswith(('.ico', '.png', '.jpg', '.jpeg', '.bmp', '.gif')):
+                        # 自定义图标文件
+                        pixmap = QtGui.QPixmap(data['icon']).scaled(40, 40, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+                        icon = QtGui.QIcon(pixmap)
+                    else:
+                        # 程序文件，使用系统图标
+                        icon = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(data['icon']))
+                else:
+                    # 使用路径获取图标
+                    if os.path.exists(data['path']):
+                        icon = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(data['path']))
+                    else:
+                        icon = qtawesome.icon('fa5s.question')
+            
+            # 更新item_widget的图标
+            pixmap = icon.pixmap(40, 40).scaled(40, 40, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            item_widget.icon_label.setPixmap(pixmap)
+            
+            # 发出更新信号
+            self.item_updated.emit()
+            
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "错误", f"更新项目时发生错误: {str(e)}")
 
     @staticmethod
     def _get_website_info(url):
@@ -285,6 +435,7 @@ class SoftwareListWidget(QtWidgets.QListWidget):
         item.icon = file_path
         # 连接信号
         item_widget.item_renamed.connect(self.item_renamed.emit)
+        item_widget.item_edit_requested.connect(self.handle_edit_request)
 
         self.setItemWidget(item, item_widget)
         self.addItem(item)
@@ -316,6 +467,8 @@ class SoftwareListWidget(QtWidgets.QListWidget):
             for item in selected_items:
                 self.takeItem(self.row(item))
             self.item_removed.emit()
+
+
 
     def mouseDoubleClickEvent(self, event):
         item = self.itemAt(event.pos())

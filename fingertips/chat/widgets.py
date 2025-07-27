@@ -52,7 +52,8 @@ class ChatHistoryWidget(FramelessWebEngineView):
         self.page().setWebChannel(self.channel)
         self.load(QtCore.QUrl.fromLocalFile('{}/chat/chat.html'.format(ROOT_PATH)))
 
-        QtCore.QTimer.singleShot(0, self.apply_rounded_corners)
+        # 直接调用而不是使用定时器，避免在对象销毁时的回调警告
+        self.apply_rounded_corners()
 
     def init_content(self, histories):
         self.bridge_object.clear_chat_histories()
@@ -94,7 +95,9 @@ class ChatHistoryWidget(FramelessWebEngineView):
             parent=self
         )
 
-        self.thread.resulted.connect(lambda msg: self.bridge_object.set_ai_chat_content(msg))
+        # 使用functools.partial替代lambda避免回调警告
+        from functools import partial
+        self.thread.resulted.connect(partial(self.bridge_object.set_ai_chat_content))
         self.thread.finished.connect(partial(self._thread_finished, ai_id, chat_model))
         self.thread.start()
 

@@ -92,7 +92,7 @@ class SoftwareCard(SidebarWidget):
     def add_tab_content(self):
         """添加默认标签页 - 可重写此方法自定义默认内容"""
         # 创建默认标签页内容
-        content_widget = SoftwareListWidget()
+        content_widget = SoftwareListWidget(self.get_dialog_parent())
         content_widget.item_added.connect(self.on_content_widget_changed)
         content_widget.item_removed.connect(self.on_content_widget_changed)
         content_widget.item_renamed.connect(self.on_content_widget_changed)
@@ -263,7 +263,7 @@ class SoftwareCard(SidebarWidget):
                 software_list = tab_data.get('software_list', [])
                 
                 # 创建软件列表组件
-                content_widget = SoftwareListWidget()
+                content_widget = SoftwareListWidget(self.get_dialog_parent())
                 
                 # 加载软件列表
                 if software_list:
