@@ -187,7 +187,7 @@ class Fingertips(QtWidgets.QWidget):
         data = get_select_entity()
         log.info(u'已调用quicker menus，{}'.format(data))
 
-        rm = ActionMenu()
+        rm = ActionMenu(parent=self)
         rm.triggered.connect(self.action_menu_triggered)
         rm.show_menu(data)
 
