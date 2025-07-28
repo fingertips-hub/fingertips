@@ -89,13 +89,18 @@ class SoftwareCard(SidebarWidget):
     def on_content_widget_changed(self):
         self.save_config_signal.emit()
 
+    def _connect_content_widget_signals(self, content_widget):
+        """连接SoftwareListWidget的所有信号到保存配置方法"""
+        content_widget.item_added.connect(self.on_content_widget_changed)
+        content_widget.item_removed.connect(self.on_content_widget_changed)
+        content_widget.item_renamed.connect(self.on_content_widget_changed)
+        content_widget.item_updated.connect(self.on_content_widget_changed)
+
     def add_tab_content(self):
         """添加默认标签页 - 可重写此方法自定义默认内容"""
         # 创建默认标签页内容
         content_widget = SoftwareListWidget(self.get_dialog_parent())
-        content_widget.item_added.connect(self.on_content_widget_changed)
-        content_widget.item_removed.connect(self.on_content_widget_changed)
-        content_widget.item_renamed.connect(self.on_content_widget_changed)
+        self._connect_content_widget_signals(content_widget)
 
         # 添加标签页
         tab_name = f"Tab {self.tab_counter}"
@@ -264,6 +269,9 @@ class SoftwareCard(SidebarWidget):
                 
                 # 创建软件列表组件
                 content_widget = SoftwareListWidget(self.get_dialog_parent())
+                
+                # 连接信号到保存配置方法
+                self._connect_content_widget_signals(content_widget)
                 
                 # 加载软件列表
                 if software_list:

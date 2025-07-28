@@ -373,6 +373,7 @@ class SoftwareListWidget(QtWidgets.QListWidget):
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
 
+            items_added = False  # 标记是否有新项目被添加
             for url in event.mimeData().urls():
                 source_file = url.toLocalFile()
                 if not source_file:
@@ -384,6 +385,7 @@ class SoftwareListWidget(QtWidgets.QListWidget):
                         web_info['url'],
                         _type='website'
                     )
+                    items_added = True
                 else:
                     file_path = get_exe_path(source_file)
                     name = (
@@ -392,6 +394,10 @@ class SoftwareListWidget(QtWidgets.QListWidget):
                         source_file.split('/')[-1]
                     )
                     self.add_item(name, file_path, source_file)
+                    items_added = True
+            
+            # 只在确实添加了项目后发出一次信号
+            if items_added:
                 self.item_added.emit()
         else:
             event.setDropAction(QtCore.Qt.MoveAction)
