@@ -208,7 +208,7 @@ class Fingertips(QtWidgets.QWidget):
         self.ai_view = None
 
     def load_style(self):
-        with open('res/theme.css') as f:
+        with open(os.path.join(os.path.dirname(__file__), 'res/theme.css')) as f:
             self.setStyleSheet(f.read())
 
     def _set_result(self, text):
