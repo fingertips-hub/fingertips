@@ -92,11 +92,6 @@ class SoftwareItemWidget(QtWidgets.QWidget):
         super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event):
-        """处理双击事件 - 快速编辑名称"""
-        if event.button() == QtCore.Qt.LeftButton:
-            self._start_edit()
-            event.accept()
-            return
         super().mouseDoubleClickEvent(event)
 
     def _start_edit(self):
